@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:sisflutterproject/screens/visit_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 
 class VisitService {
-  static final String _baseUrl = dotenv.env['BASE_URL'] ?? '';
+  static const String _baseUrl = 'http://192.168.4.177:8000/api'; 
 
   static Future<Map> submitVisit({
     required String? projectId,

@@ -20,8 +20,7 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.6.1
-assets:
-  - .env 
+
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -43,7 +42,6 @@ dependencies:
   path_provider: ^2.0.15
   intl: ^0.18.1
   geocoding: ^2.1.1
-  flutter_dotenv: ^5.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
