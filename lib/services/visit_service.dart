@@ -1,12 +1,12 @@
 import 'dart:convert';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:sisflutterproject/screens/visit_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 
 class VisitService {
-  static const String _baseUrl = 'http://192.168.239.214:8000/api'; 
+  static final String _baseUrl = dotenv.env['BASE_URL'] ?? '';
 
   static Future<Map> submitVisit({
     required String? projectId,
@@ -27,11 +27,27 @@ class VisitService {
       var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/kunjungan'));
       final token = await SessionService.getToken();
       final userID = await SessionService.getID();
-      print({'token' : token});
       if (token == null || token.isEmpty) {
         throw Exception('User not authenticated - Please login again');
       }
       request.headers['Authorization'] = token;
+
+      print({
+        'fieldToSend' : {
+        'user_id': userID.toString(),
+        'project_id': projectId.toString(),
+        'nama_knj': namaKnj.toString(),
+        'tgl_knj': tglKnj.toString(),
+        'lokasi_knj': lokasiknj.toString(),
+        'latlong_knj': latlongKnj.toString(),
+        'pekerjaan_knj': pekerjaanKnj.toString(),
+        'kategori_knj': kategoriKnj.toString(),
+        'sumber_knj': sumberKnj.toString(),
+        'hasil_knj': hasilKnj.toString(),
+        'kontak_knj': kontakKnj.toString(),
+        'token' : token
+        }
+      });
       // Add text fields
       request.fields.addAll({
         'user_id': userID.toString(),
@@ -60,12 +76,14 @@ class VisitService {
       // Send request
       var response = await request.send();
       final responseBody = await response.stream.bytesToString(); 
+      print({
+        'responseBody' :responseBody
+      });
       // Check response
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(responseBody);
       } else {
-       
-        return jsonDecode(responseBody);
+         throw Exception('error: Terdapat Error Saat Mengirim Data ,Code : ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('error: $e');
@@ -86,11 +104,9 @@ static Future<List<DropdownItem>> fetchProjects() async {
       },
     );
 
+
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      print({
-        "responseData" : data
-      });
+      final data = jsonDecode(response.body)['data'] as List;
       return data.map((project) {
         return DropdownItem(
           value: project['id'].toString(),
@@ -101,7 +117,6 @@ static Future<List<DropdownItem>> fetchProjects() async {
       throw Exception('Gagal memuat project: ${response.statusCode}');
     }
   } catch (e) {
-    print('Error fetching projects: $e');
     rethrow;
   }
 }

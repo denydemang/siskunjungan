@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
-
 import 'package:sisflutterproject/services/visit_service.dart';
 
 class DropdownItem {
@@ -32,34 +32,61 @@ class _VisitScreenState extends State<VisitScreen> {
   final TextEditingController _projectController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
   
-  String? _selectedTime = '07.00';
   XFile? _imageFile;
   String? _location;
+  String? _namaDaerah;
   bool _isGettingLocation = false;
+  bool _isLoadingProjects = false;
+  String? _projectError;
+  final Map<String, String> _locationCache = {};
 
-
-  // Define dropdown options with separate values and display text
-  final List<DropdownItem> _projectOptions = [
-    DropdownItem(value: '0', displayText: 'Belum Dapat'),
-    DropdownItem(value: '1', displayText: 'Database'),
-    DropdownItem(value: '2', displayText: 'Potensi'),
-    DropdownItem(value: '3', displayText: 'Prospek'),
-    DropdownItem(value: '4', displayText: 'Hot Prospek'),
-    DropdownItem(value: '5', displayText: 'Booking'),
-  ];
+  List<DropdownItem> _projectOptions = [];
 
   final List<DropdownItem> _categoryOptions = [
-    DropdownItem(value: 'cat0', displayText: 'Reguler'),
-    DropdownItem(value: 'cat1', displayText: 'VIP'),
-    DropdownItem(value: 'cat2', displayText: 'VVIP'),
+    DropdownItem(value: 'Reguler', displayText: 'Reguler'),
+    DropdownItem(value: 'VIP', displayText: 'VIP'),
+    DropdownItem(value: 'VVIP', displayText: 'VVIP'),
   ];
 
   final List<DropdownItem> _sourceOptions = [
-    DropdownItem(value: 'src0', displayText: 'Program Pohon'),
-    DropdownItem(value: 'src1', displayText: 'Media Sosial'),
-    DropdownItem(value: 'src2', displayText: 'Baligo'),
-    DropdownItem(value: 'src3', displayText: 'Flyering'),
+    DropdownItem(value: 'Program Pohon', displayText: 'Program Pohon'),
+    DropdownItem(value: 'Media Sosial', displayText: 'Media Sosial'),
+    DropdownItem(value: 'Baligo', displayText: 'Baligo'),
+    DropdownItem(value: 'Flyering', displayText: 'Flyering'),
   ];
+
+  Future<void> _loadProjects() async {
+    setState(() {
+      _isLoadingProjects = true;
+      _projectError = null;
+    });
+
+    try {
+      final projects = await VisitService.fetchProjects();
+      setState(() {
+        _projectOptions = projects;
+      });
+    } catch (e) {
+      setState(() {
+        _projectError = e.toString();
+        _projectOptions = [
+          DropdownItem(value: '0', displayText: 'Belum Dapat'),
+          DropdownItem(value: '1', displayText: 'Database'),
+          DropdownItem(value: '2', displayText: 'Potensi'),
+          DropdownItem(value: '3', displayText: 'Prospek'),
+          DropdownItem(value: '4', displayText: 'Hot Prospek'),
+          DropdownItem(value: '5', displayText: 'Booking'),
+        ];
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat project: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoadingProjects = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -71,14 +98,21 @@ class _VisitScreenState extends State<VisitScreen> {
     _sourceController.dispose();
     _descriptionController.dispose();
     _projectController.dispose();
+    _lokasiController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Visit'),
+        title: const Text('Form Kunjungan'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -88,38 +122,68 @@ class _VisitScreenState extends State<VisitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              const SizedBox(height: 24),
-
-              // Form Title
-              const Text(
-                'Form Kunjungan Konsumen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 16),
+              
+              // Project Dropdown
+              Row(
+                children: [
+                  const Text('Nama Project', style: TextStyle(fontSize: 16)),
+                ],
               ),
-              const Divider(height: 20, thickness: 1),
+              const SizedBox(height: 4),
+              _isLoadingProjects
+                ? const Center(child: CircularProgressIndicator())
+                : _projectError != null
+                    ? Column(
+                        children: [
+                          _buildDropdownField(
+                            controller: _projectController,
+                            label: '',
+                            icon: Icons.add_home_work,
+                            items: _projectOptions,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Harap pilih project';
+                              }
+                              return null;
+                            },
+                          ),
+                          Text(
+                            _projectError!,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.refresh),
+                            onPressed: _loadProjects,
+                            tooltip: 'Refresh Data Project',
+                          ),
+                        ],
+                      )
+                    : _buildDropdownField(
+                        controller: _projectController,
+                        label: '',
+                        icon: Icons.add_home_work,
+                        items: _projectOptions,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Harap pilih project';
+                          }
+                          return null;
+                        },
+                      ),
               const SizedBox(height: 16),
 
-              // Project Dropdown
-              _buildDropdownField(
-                controller: _projectController,
-                label: 'Nama Project',
-                icon: Icons.add_home_work,
-                items: _projectOptions,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harap pilih project';
-                  }
-                  return null;
-                },
-              ),
-
               // Company Name
+              Row(
+                children: [
+                  const Text('Nama Perusahaan', style: TextStyle(fontSize: 16)),
+                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
+              ),
+              const SizedBox(height: 4),
               _buildTextField(
                 controller: _companyController,
-                label: 'Nama Perusahaan',
+                label: '',
                 icon: Icons.business,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -128,11 +192,19 @@ class _VisitScreenState extends State<VisitScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
 
               // Full Name
+              Row(
+                children: [
+                  const Text('Nama Lengkap', style: TextStyle(fontSize: 16)),
+                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
+              ),
+              const SizedBox(height: 4),
               _buildTextField(
                 controller: _nameController,
-                label: 'Nama Lengkap',
+                label: '',
                 icon: Icons.person,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -141,33 +213,45 @@ class _VisitScreenState extends State<VisitScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
 
               // Job
+              Row(
+                children: [
+                  const Text('Pekerjaan', style: TextStyle(fontSize: 16)),
+                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
+              ),
+              const SizedBox(height: 4),
               _buildTextField(
                 controller: _jobController,
-                label: 'Pekerjaan',
+                label: '',
                 icon: Icons.work,
               ),
+              const SizedBox(height: 16),
               
-              // Job
-              _buildTextField(
-                controller: _lokasiController,
-                label: 'Lokasi',
-                icon: Icons.gps_fixed,
-              ),
-
               // Category Dropdown
+              const Text('Kategori', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 4),
               _buildDropdownField(
                 controller: _categoryController,
-                label: 'Kategori',
+                label: '',
                 icon: Icons.category,
                 items: _categoryOptions,
               ),
+              const SizedBox(height: 16),
 
               // Phone Number
+              Row(
+                children: [
+                  const Text('No HP', style: TextStyle(fontSize: 16)),
+                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
+              ),
+              const SizedBox(height: 4),
               _buildTextField(
                 controller: _phoneController,
-                label: 'No Hp',
+                label: '',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
                 validator: (value) {
@@ -180,28 +264,44 @@ class _VisitScreenState extends State<VisitScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
 
               // Source Dropdown
+              const Text('Sumber', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 4),
               _buildDropdownField(
                 controller: _sourceController,
-                label: 'Sumber',
+                label: '',
                 icon: Icons.source,
                 items: _sourceOptions,
               ),
+              const SizedBox(height: 16),
 
               // Visit Description
+                     Row(
+                children: [
+                  const Text('Deskripsi Hasil Kunjungan', style: TextStyle(fontSize: 16)),
+                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
+              ),
+              const SizedBox(height: 4),
               _buildTextField(
                 controller: _descriptionController,
-                label: 'Deskripsi Hasil Kunjungan',
+                label: '',
                 icon: Icons.description,
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Image and Location Section
-              const Text(
-                'Ambil Gambar dan Lokasi',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              const Row(
+                children: [
+                  Text(
+                    'Ambil Gambar dan Lokasi',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
+                ],
               ),
               const SizedBox(height: 8),
               
@@ -214,7 +314,13 @@ class _VisitScreenState extends State<VisitScreen> {
                         icon: const Icon(Icons.camera_alt, size: 40),
                         onPressed: _takePicture,
                       ),
-                      const Text('Ambil Gambar'),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Ambil Gambar'),
+                          Text('*', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ],
                   ),
                   Column(
@@ -225,7 +331,13 @@ class _VisitScreenState extends State<VisitScreen> {
                       ),
                       _isGettingLocation 
                           ? const CircularProgressIndicator()
-                          : const Text('Ambil Lokasi'),
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Ambil Lokasi'),
+                                Text('*', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
                     ],
                   ),
                 ],
@@ -235,10 +347,12 @@ class _VisitScreenState extends State<VisitScreen> {
               // Preview Image
               if (_imageFile != null)
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
                     const Text(
-                      'Gambar yang diambil:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      'Gambar berhasil diambil',
+                      style: TextStyle(color: Colors.green, fontSize: 16),
                     ),
                     const SizedBox(height: 8),
                     Image.file(
@@ -256,11 +370,24 @@ class _VisitScreenState extends State<VisitScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 8),
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
                     const Text(
-                      'Lokasi:',
+                      'Lokasi berhasil diambil',
+                      style: TextStyle(color: Colors.green, fontSize: 12),
+                    ),
+                    const Text(
+                      'Koordinat:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(_location!),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Nama Daerah:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(_namaDaerah ?? 'Sedang memuat nama daerah...'),
+                   
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -273,14 +400,25 @@ class _VisitScreenState extends State<VisitScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                    backgroundColor: _location == null || _imageFile == null 
+                        ? Colors.grey 
+                        : Theme.of(context).primaryColor,
                   ),
-                  onPressed: _submitForm,
-                  child: const Text(
-                    'SAVE',
-                    style: TextStyle(fontSize: 18),
+                  onPressed: (_location == null || _imageFile == null) 
+                      ? null 
+                      : _submitForm,
+                  child: Text(
+                    'SIMPAN',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: _location == null || _imageFile == null 
+                          ? Colors.grey 
+                          : Colors.white, // atau warna lain yang Anda inginkan
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -296,23 +434,20 @@ class _VisitScreenState extends State<VisitScreen> {
     TextInputType? keyboardType,
     int? maxLines = 1,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-        validator: validator,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
+        filled: true,
+        fillColor: Colors.grey[50],
       ),
+      validator: validator,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
     );
   }
 
@@ -323,36 +458,33 @@ class _VisitScreenState extends State<VisitScreen> {
     required List<DropdownItem> items,
     String? Function(String?)? validator,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: DropdownButtonFormField<DropdownItem>(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
+    return DropdownButtonFormField<DropdownItem>(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-        items: items.map((DropdownItem item) {
-          return DropdownMenuItem<DropdownItem>(
-            value: item,
-            child: Text(item.displayText),
-          );
-        }).toList(),
-        onChanged: (DropdownItem? newValue) {
-          if (newValue != null) {
-            controller.text = newValue.value;
-          }
-        },
-        validator: validator != null 
-            ? (value) => validator(value?.value)
-            : null,
-        value: items.firstWhere(
-          (item) => item.value == controller.text,
-          orElse: () => items.first,
-        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      items: items.map((DropdownItem item) {
+        return DropdownMenuItem<DropdownItem>(
+          value: item,
+          child: Text(item.displayText),
+        );
+      }).toList(),
+      onChanged: (DropdownItem? newValue) {
+        if (newValue != null) {
+          controller.text = newValue.value;
+        }
+      },
+      validator: validator != null 
+          ? (value) => validator(value?.value)
+          : null,
+      value: items.firstWhere(
+        (item) => item.value == controller.text,
+        orElse: () => items.first,
       ),
     );
   }
@@ -375,13 +507,15 @@ class _VisitScreenState extends State<VisitScreen> {
   Future<void> _getLocation() async {
     setState(() {
       _isGettingLocation = true;
+      _location = null;
+      _namaDaerah = null;
     });
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lokasi tidak aktif')),
+          const SnackBar(content: Text('Aktifkan layanan lokasi terlebih dahulu')),
         );
         return;
       }
@@ -391,7 +525,7 @@ class _VisitScreenState extends State<VisitScreen> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Izin lokasi ditolak')),
+            const SnackBar(content: Text('Izin lokasi diperlukan untuk melanjutkan')),
           );
           return;
         }
@@ -399,7 +533,7 @@ class _VisitScreenState extends State<VisitScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Izin lokasi ditolak permanen')),
+          const SnackBar(content: Text('Aktifkan izin lokasi di pengaturan device')),
         );
         return;
       }
@@ -408,10 +542,54 @@ class _VisitScreenState extends State<VisitScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      setState(() {
-        _location = 'Lat: ${position.latitude.toStringAsFixed(4)}, '
-                   'Lng: ${position.longitude.toStringAsFixed(4)}';
-      });
+      String cacheKey = '${position.latitude},${position.longitude}';
+      if (_locationCache.containsKey(cacheKey)) {
+        setState(() {
+          _location = cacheKey;
+          _namaDaerah = _locationCache[cacheKey];
+          _lokasiController.text = _namaDaerah!;
+        });
+      } else {
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            position.latitude,
+            position.longitude,
+          );
+
+          if (placemarks.isNotEmpty) {
+            Placemark place = placemarks.first;
+            setState(() {
+              _location = cacheKey;
+              _namaDaerah = [
+                place.subLocality,
+                place.locality,
+                place.subAdministrativeArea,
+                place.administrativeArea,
+              ].where((part) => part?.isNotEmpty ?? false).join(', ');
+              _lokasiController.text = _namaDaerah!;
+              _locationCache[cacheKey] = _namaDaerah!;
+            });
+          }
+        } on SocketException catch (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tidak ada koneksi internet untuk mendapatkan nama daerah')),
+          );
+          setState(() {
+            _location = cacheKey;
+            _namaDaerah = 'Lokasi (${_location})';
+            _lokasiController.text = _namaDaerah!;
+          });
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal mendapatkan nama daerah: $e')),
+          );
+          setState(() {
+            _location = cacheKey;
+            _namaDaerah = 'Lokasi (${_location})';
+            _lokasiController.text = _namaDaerah!;
+          });
+        }
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal mendapatkan lokasi: $e')),
@@ -423,82 +601,94 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
- void _submitForm() async {
-  if (_formKey.currentState!.validate()) {
-    // Show loading indicator
- 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-    print({
-        'projectId': _projectController.text,
-        'namaKnj': _nameController.text,
-        'tglKnj': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-        'lokasiknj': _lokasiController.text,
-        'latlongKnj': _location,
-        'pekerjaanKnj': _jobController.text,
-        'kategoriKnj': _categoryController.text,
-        'sumberKnj':  _sourceController.text,
-        'hasilKnj': _descriptionController.text,  
-        'imageFile': _imageFile,
-        'kontakKnj': _phoneController.text
-    });
-    try {
-      // Call service to submit data
-     
-        Map response = await VisitService.submitVisit(
-        projectId: _projectController.text,
-        namaKnj: _nameController.text,
-        tglKnj: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-        lokasiknj: _lokasiController.text,
-        latlongKnj: _location,
-        pekerjaanKnj: _jobController.text,
-        kategoriKnj: _categoryController.text,
-        sumberKnj:  _sourceController.text,
-        hasilKnj: _descriptionController.text,  
-        imageFile: _imageFile,
-        kontakKnj: _phoneController.text
-      );
-
-      if (response.containsKey('success')){
-
-          // Reset form
-     
-        setState(() {
-          _imageFile = null;
-          _location = null;
-        });
-       _formKey.currentState!.reset();
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data Berhasil Tersimpan !'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      }
-    
-      
-    } catch (e){
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      if (_location == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data Gagal tersimpan !'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-    
-    finally {
-      // Hide loading indicator
-      Navigator.of(context).pop();
-    }
+          const SnackBar(
+            content: Text('Harap ambil lokasi terlebih dahulu!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
 
-  
-    
-     
+      if (_imageFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Harap ambil gambar terlebih dahulu!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        if (_projectOptions.isNotEmpty && _projectController.text.isEmpty) {
+          _projectController.text = _projectOptions.first.value;
+        }
+        if (_sourceOptions.isNotEmpty && _sourceController.text.isEmpty) {
+          _sourceController.text = _sourceOptions.first.value;
+        }
+        if (_categoryOptions.isNotEmpty && _categoryController.text.isEmpty) {
+          _categoryController.text = _categoryOptions.first.value;
+        }
+
+        Map response = await VisitService.submitVisit(
+          projectId: _projectController.text,
+          namaKnj: _nameController.text,
+          tglKnj: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+          lokasiknj: _namaDaerah ?? '-',
+          latlongKnj: _location,
+          pekerjaanKnj: _jobController.text,
+          kategoriKnj: _categoryController.text,
+          sumberKnj: _sourceController.text,
+          hasilKnj: _descriptionController.text,  
+          imageFile: _imageFile,
+          kontakKnj: _phoneController.text
+        );
+
+        if (response.containsKey('success')) {
+          setState(() {
+            _imageFile = null;
+            _location = null;
+            _namaDaerah = null;
+          });
+          _formKey.currentState!.reset();
+          _companyController.clear();
+          _nameController.clear();
+          _jobController.clear();
+          _categoryController.clear();
+          _phoneController.clear();
+          _sourceController.clear();
+          _descriptionController.clear();
+          _projectController.clear();
+          _lokasiController.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data berhasil disimpan!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan data!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } finally {
+        Navigator.of(context).pop();
+      }
+    }
   }
-}
 
   String _getDisplayText(List<DropdownItem> items, String value) {
     return items.firstWhere(
