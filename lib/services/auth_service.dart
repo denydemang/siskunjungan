@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   static const String baseUrl =
-      'http://192.168.4.177:8000/api'; 
+      'https://fakelocation.warungkode.com/api'; 
 
   static Future<Map<String, dynamic>> login({
     required String email,

@@ -82,12 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-                const Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                        padding: EdgeInsets.only(top: 8.0),
-                        child: Text('Forgot Password?',
-                            style: TextStyle(color: Colors.grey)))),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -116,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Padding(
                   padding: EdgeInsets.only(bottom: 12.0),
                   child: Text(
-                    'By logging in or registering, you agree to our Terms of Service and Privacy Policy',
+                    '',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 11, color: Colors.grey),
                   ),

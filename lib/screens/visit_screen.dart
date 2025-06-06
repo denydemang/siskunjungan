@@ -4,7 +4,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:sisflutterproject/services/session_service.dart';
 import 'package:sisflutterproject/services/visit_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 class DropdownItem {
   final String value;
@@ -21,6 +26,10 @@ class VisitScreen extends StatefulWidget {
 }
 
 class _VisitScreenState extends State<VisitScreen> {
+  bool? _isRootedOrJailbroken;
+  bool _fakeGpsDetected = false;
+  String _fakeGpsMessage = '';
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -60,7 +69,6 @@ class _VisitScreenState extends State<VisitScreen> {
       _isLoadingProjects = true;
       _projectError = null;
     });
-
     try {
       final projects = await VisitService.fetchProjects();
       setState(() {
@@ -106,6 +114,8 @@ class _VisitScreenState extends State<VisitScreen> {
   void initState() {
     super.initState();
     _loadProjects();
+    _checkRootJailbreak();
+   
   }
 
   @override
@@ -404,7 +414,7 @@ class _VisitScreenState extends State<VisitScreen> {
                         ? Colors.grey 
                         : Theme.of(context).primaryColor,
                   ),
-                  onPressed: (_location == null || _imageFile == null) 
+                  onPressed: (_location == null || _imageFile == null || _isRootedOrJailbroken ==  true) 
                       ? null 
                       : _submitForm,
                   child: Text(
@@ -504,11 +514,53 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
+  Future<void> _checkRootJailbreak() async {
+    bool detected = await RootJailbreakDetector.isRooted();
+      setState(() {
+        _isRootedOrJailbroken = detected;
+      });
+      if(_isRootedOrJailbroken == true){
+             await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Device Already Jailbreak'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Your Device Already Rooted !, Please consider to un-root your device and try again !'),
+            const SizedBox(height: 10),
+            // Text('Jarak antara GPS dan IP: ${distance.toStringAsFixed(2)} km'),
+            // if (vpnDetected) const Text('VPN Terdeteksi'),
+            
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.pop(context);
+
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+      }
+    }
+
+  
+
+
   Future<void> _getLocation() async {
     setState(() {
       _isGettingLocation = true;
       _location = null;
       _namaDaerah = null;
+      _fakeGpsDetected = false;
+      _fakeGpsMessage = '';
     });
 
     try {
@@ -542,6 +594,39 @@ class _VisitScreenState extends State<VisitScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      // Panggil API deteksi Fake GPS
+      try {
+         final fakeGpsResponse = await _checkFakeGps(
+        latitude: position.latitude,
+        longitude: position.longitude,
+          );
+          
+          if (fakeGpsResponse['status'] == 'warning') {
+            setState(() {
+              _fakeGpsDetected = true;
+              _fakeGpsMessage = fakeGpsResponse['message'];
+            });
+            // Tampilkan dialog peringatan dan batalkan pengambilan lokasi
+            await _showFakeGpsWarningDialog(
+              context,
+              fakeGpsResponse['message'],
+              fakeGpsResponse['distance_km'],
+              fakeGpsResponse['vpn_detected'],
+            );
+            
+            return; // Batalkan proses pengambilan lokasi
+          }
+
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed To check FakeGPS!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+     
       String cacheKey = '${position.latitude},${position.longitude}';
       if (_locationCache.containsKey(cacheKey)) {
         setState(() {
@@ -592,12 +677,88 @@ class _VisitScreenState extends State<VisitScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mendapatkan lokasi: $e')),
+        SnackBar(content: Text('Failed To Get Location: $e')),
       );
     } finally {
       setState(() {
         _isGettingLocation = false;
       });
+    }
+  }
+
+   Future<void> _showFakeGpsWarningDialog(
+    BuildContext context,
+    String message,
+    double distance,
+    bool vpnDetected,
+  ) async {
+    bool continueAnyway = false;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Warning!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            const SizedBox(height: 10),
+            // Text('Jarak antara GPS dan IP: ${distance.toStringAsFixed(2)} km'),
+            // if (vpnDetected) const Text('VPN Terdeteksi'),
+            
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+
+  }
+
+  Future<Map<String, dynamic>> _checkFakeGps({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      const String apiUrl = 'https://fakelocation.warungkode.com/api/check-location';
+      final token = await SessionService.getToken();
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization' : token.toString()
+          },
+        body: json.encode({
+          'latitude': latitude,
+          'longitude': longitude,
+          'image_base64': '', // Kosongkan seperti permintaan
+          'root_jailbreak': _isRootedOrJailbroken, // Asumsi device tidak di-root
+        }),
+      );
+
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to check fake GPS: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Jika API error, anggap lokasi valid tetapi beri warning
+      return {
+        'status': 'error',
+        'message': 'Tidak dapat memverifikasi lokasi: $e',
+        'distance_km': 0,
+        'vpn_detected': false,
+      };
     }
   }
 
@@ -695,5 +856,67 @@ class _VisitScreenState extends State<VisitScreen> {
       (item) => item.value == value,
       orElse: () => DropdownItem(value: '', displayText: 'Tidak diketahui'),
     ).displayText;
+  }
+}
+
+
+class RootJailbreakDetector {
+  static Future<bool> isRooted() async {
+    if (kIsWeb) return false;
+
+    if (Platform.isAndroid) {
+      List<String> paths = [
+        '/system/app/Superuser.apk',
+        '/sbin/su',
+        '/system/bin/su',
+        '/system/xbin/su',
+        '/data/local/xbin/su',
+        '/data/local/bin/su',
+        '/system/sd/xbin/su',
+        '/system/bin/failsafe/su',
+        '/data/local/su',
+      ];
+
+      for (var path in paths) {
+        if (await File(path).exists()) {
+          return true;
+        }
+      }
+
+      try {
+        final tags = await File('/system/build.prop').readAsString();
+        if (tags.contains('test-keys')) {
+          return true;
+        }
+      } catch (e) {}
+
+      try {
+        ProcessResult result = await Process.run('which', ['su']);
+        if (result.stdout.toString().isNotEmpty) {
+          return true;
+        }
+      } catch (e) {}
+
+      return false;
+    } else if (Platform.isIOS) {
+      List<String> jailbreakPaths = [
+        '/Applications/Cydia.app',
+        '/Library/MobileSubstrate/MobileSubstrate.dylib',
+        '/bin/bash',
+        '/usr/sbin/sshd',
+        '/etc/apt',
+      ];
+
+      for (var path in jailbreakPaths) {
+        if (await File(path).exists()) {
+          return true;
+        }
+      }
+
+      // Dummy cek url scheme jailbreak, skip dan return false
+      return false;
+    } else {
+      return false;
+    }
   }
 }
