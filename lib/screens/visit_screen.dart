@@ -9,7 +9,17 @@ import 'package:sisflutterproject/services/visit_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:safe_device/safe_device.dart';
 
+// Color Scheme based on the dashboard image
+const Color primaryColor =  Color(0xFF009688);// Dark blue from dashboard header
+const Color accentColor =  Color(0xFF4CAF50);   // Green from the ▲ indicators
+const Color backgroundColor = Color(0xFFF5F5F5); // Light gray background
+const Color textColor = Color(0xFF333333);     // Dark text color
+const Color errorColor = Color(0xFFE53935);     // Red for errors
+const Color successColor = Color(0xFF43A047);   // Green for success messages
+const Color warningColor = Color(0xFFFFA000);   // Amber for warnings
+const Color disabledColor = Color(0xFFBDBDBD);  // Gray for disabled elements
 
 class DropdownItem {
   final String value;
@@ -87,7 +97,10 @@ class _VisitScreenState extends State<VisitScreen> {
         ];
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat project: $e')),
+        SnackBar(
+          content: Text('Gagal memuat project: $e'),
+          backgroundColor: errorColor,
+        ),
       );
     } finally {
       setState(() {
@@ -115,321 +128,294 @@ class _VisitScreenState extends State<VisitScreen> {
     super.initState();
     _loadProjects();
     _checkRootJailbreak();
-   
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Form Kunjungan'),
+        title: const Text('Form Kunjungan', style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              
-              // Project Dropdown
-              Row(
-                children: [
-                  const Text('Nama Project', style: TextStyle(fontSize: 16)),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _isLoadingProjects
-                ? const Center(child: CircularProgressIndicator())
-                : _projectError != null
-                    ? Column(
-                        children: [
-                          _buildDropdownField(
-                            controller: _projectController,
-                            label: '',
-                            icon: Icons.add_home_work,
-                            items: _projectOptions,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Harap pilih project';
-                              }
-                              return null;
-                            },
-                          ),
-                          Text(
-                            _projectError!,
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.refresh),
-                            onPressed: _loadProjects,
-                            tooltip: 'Refresh Data Project',
-                          ),
-                        ],
-                      )
-                    : _buildDropdownField(
-                        controller: _projectController,
-                        label: '',
-                        icon: Icons.add_home_work,
-                        items: _projectOptions,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Harap pilih project';
-                          }
-                          return null;
-                        },
-                      ),
-              const SizedBox(height: 16),
+      body: Container(
+        color: backgroundColor,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                
+                // Project Dropdown
+                Row(
+                  children: [
+                    const Text('Nama Project', style: TextStyle(fontSize: 16, color: textColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _isLoadingProjects
+                  ? Center(child: CircularProgressIndicator(color: primaryColor))
+                  : _projectError != null
+                      ? Column(
+                          children: [
+                            _buildDropdownField(
+                              controller: _projectController,
+                              label: '',
+                              icon: Icons.add_home_work,
+                              items: _projectOptions,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Harap pilih project';
+                                }
+                                return null;
+                              },
+                            ),
+                            Text(
+                              _projectError!,
+                              style: const TextStyle(color: errorColor),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.refresh, color: primaryColor),
+                              onPressed: _loadProjects,
+                              tooltip: 'Refresh Data Project',
+                            ),
+                          ],
+                        )
+                      : _buildDropdownField(
+                          controller: _projectController,
+                          label: '',
+                          icon: Icons.add_home_work,
+                          items: _projectOptions,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Harap pilih project';
+                            }
+                            return null;
+                          },
+                        ),
+                const SizedBox(height: 16),
 
-              // Company Name
-              Row(
-                children: [
-                  const Text('Nama Perusahaan', style: TextStyle(fontSize: 16)),
-                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _buildTextField(
-                controller: _companyController,
-                label: '',
-                icon: Icons.business,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harap masukkan nama perusahaan';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                // Company Name
+                Row(
+                  children: [
+                    const Text('Nama Perusahaan', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildTextField(
+                  controller: _companyController,
+                  label: '',
+                  icon: Icons.business,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Harap masukkan nama perusahaan';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Full Name
-              Row(
-                children: [
-                  const Text('Nama Lengkap', style: TextStyle(fontSize: 16)),
-                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _buildTextField(
-                controller: _nameController,
-                label: '',
-                icon: Icons.person,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harap masukkan nama lengkap';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                // Full Name
+                Row(
+                  children: [
+                    const Text('Nama Lengkap', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildTextField(
+                  controller: _nameController,
+                  label: '',
+                  icon: Icons.person,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Harap masukkan nama lengkap';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Job
-              Row(
-                children: [
-                  const Text('Pekerjaan', style: TextStyle(fontSize: 16)),
-                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _buildTextField(
-                controller: _jobController,
-                label: '',
-                icon: Icons.work,
-              ),
-              const SizedBox(height: 16),
-              
-              // Category Dropdown
-              const Text('Kategori', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 4),
-              _buildDropdownField(
-                controller: _categoryController,
-                label: '',
-                icon: Icons.category,
-                items: _categoryOptions,
-              ),
-              const SizedBox(height: 16),
+                // Job
+                Row(
+                  children: [
+                    const Text('Pekerjaan', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildTextField(
+                  controller: _jobController,
+                  label: '',
+                  icon: Icons.work,
+                ),
+                const SizedBox(height: 16),
+                
+                // Category Dropdown
+                const Text('Kategori', style: TextStyle(fontSize: 16, color: textColor)),
+                const SizedBox(height: 4),
+                _buildDropdownField(
+                  controller: _categoryController,
+                  label: '',
+                  icon: Icons.category,
+                  items: _categoryOptions,
+                ),
+                const SizedBox(height: 16),
 
-              // Phone Number
-              Row(
-                children: [
-                  const Text('No HP', style: TextStyle(fontSize: 16)),
-                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _buildTextField(
-                controller: _phoneController,
-                label: '',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harap masukkan nomor handphone';
-                  }
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                    return 'Nomor handphone tidak valid';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                // Phone Number
+                Row(
+                  children: [
+                    const Text('No HP', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: '',
+                  icon: Icons.phone,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Harap masukkan nomor handphone';
+                    }
+                    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                      return 'Nomor handphone tidak valid';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Source Dropdown
-              const Text('Sumber', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 4),
-              _buildDropdownField(
-                controller: _sourceController,
-                label: '',
-                icon: Icons.source,
-                items: _sourceOptions,
-              ),
-              const SizedBox(height: 16),
+                // Source Dropdown
+                const Text('Sumber', style: TextStyle(fontSize: 16, color: textColor)),
+                const SizedBox(height: 4),
+                _buildDropdownField(
+                  controller: _sourceController,
+                  label: '',
+                  icon: Icons.source,
+                  items: _sourceOptions,
+                ),
+                const SizedBox(height: 16),
 
-              // Visit Description
-                     Row(
-                children: [
-                  const Text('Deskripsi Hasil Kunjungan', style: TextStyle(fontSize: 16)),
-                  const Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _buildTextField(
-                controller: _descriptionController,
-                label: '',
-                icon: Icons.description,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
+                // Visit Description
+                Row(
+                  children: [
+                    const Text('Deskripsi Hasil Kunjungan', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildTextField(
+                  controller: _descriptionController,
+                  label: '',
+                  icon: Icons.description,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
 
-              // Image and Location Section
-              const Row(
-                children: [
-                  Text(
-                    'Ambil Gambar dan Lokasi',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  Text(' *(Wajib Diisi!)', style: TextStyle(color: Colors.red )),
-                ],
-              ),
-              const SizedBox(height: 8),
-              
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
+                // Image Section
+                Center(
+                  child: Column(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 40),
+                        icon: Icon(Icons.camera_alt, size: 40, color: primaryColor),
                         onPressed: _takePicture,
                       ),
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Ambil Gambar'),
-                          Text('*', style: TextStyle(color: Colors.red)),
+                        children: const [
+                          Text('Ambil Gambar', style: TextStyle(color: textColor)),
+                          Text('*', style: TextStyle(color: errorColor)),
                         ],
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Preview Image and Location Info
+                if (_imageFile != null)
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.location_on, size: 40),
-                        onPressed: _isGettingLocation ? null : _getLocation,
+                      const Icon(Icons.check_circle, color: successColor, size: 16),
+                      const Text(
+                        'Gambar berhasil diambil',
+                        style: TextStyle(color: successColor, fontSize: 16),
                       ),
-                      _isGettingLocation 
-                          ? const CircularProgressIndicator()
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Ambil Lokasi'),
-                                Text('*', style: TextStyle(color: Colors.red)),
-                              ],
+                      const SizedBox(height: 8),
+                      Image.file(
+                        File(_imageFile!.path),
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      if (_isGettingLocation)
+                        Center(child: CircularProgressIndicator(color: primaryColor)),
+                      
+                      if (_location != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.check_circle, color: successColor, size: 16),
+                            const Text(
+                              'Lokasi berhasil diambil',
+                              style: TextStyle(color: successColor, fontSize: 12),
                             ),
+                            const Text(
+                              'Koordinat:',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+                            ),
+                            Text(_location!, style: const TextStyle(color: textColor)),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Nama Daerah:',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+                            ),
+                            Text(_namaDaerah ?? 'Sedang memuat nama daerah...', style: const TextStyle(color: textColor)),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
-              // Preview Image
-              if (_imageFile != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    const Text(
-                      'Gambar berhasil diambil',
-                      style: TextStyle(color: Colors.green, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Image.file(
-                      File(_imageFile!.path),
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              
-              // Location Info
-              if (_location != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    const Text(
-                      'Lokasi berhasil diambil',
-                      style: TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                    const Text(
-                      'Koordinat:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(_location!),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Nama Daerah:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(_namaDaerah ?? 'Sedang memuat nama daerah...'),
-                   
-                    const SizedBox(height: 16),
-                  ],
-                ),
 
-              // Save Button
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                // Save Button
+                Center(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: _location == null || _imageFile == null 
+                          ? disabledColor 
+                          : primaryColor,
                     ),
-                    backgroundColor: _location == null || _imageFile == null 
-                        ? Colors.grey 
-                        : Theme.of(context).primaryColor,
-                  ),
-                  onPressed: (_location == null || _imageFile == null || _isRootedOrJailbroken ==  true) 
-                      ? null 
-                      : _submitForm,
-                  child: Text(
-                    'SIMPAN',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: _location == null || _imageFile == null 
-                          ? Colors.grey 
-                          : Colors.white, // atau warna lain yang Anda inginkan
+                    onPressed: (_location == null || _imageFile == null || _isRootedOrJailbroken ==  true) 
+                        ? null 
+                        : _submitForm,
+                    child: Text(
+                      'SIMPAN',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: _location == null || _imageFile == null 
+                            ? Colors.grey[800]
+                            : Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
@@ -446,14 +432,25 @@ class _VisitScreenState extends State<VisitScreen> {
   }) {
     return TextFormField(
       controller: controller,
+      style: const TextStyle(color: textColor),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: TextStyle(color: textColor.withOpacity(0.6)),
+        prefixIcon: Icon(icon, color: primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primaryColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: primaryColor.withOpacity(0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Colors.white,
       ),
       validator: validator,
       keyboardType: keyboardType,
@@ -469,19 +466,31 @@ class _VisitScreenState extends State<VisitScreen> {
     String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<DropdownItem>(
+      style: const TextStyle(color: textColor),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: TextStyle(color: textColor.withOpacity(0.6)),
+        prefixIcon: Icon(icon, color: primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primaryColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: primaryColor.withOpacity(0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Colors.white,
       ),
+      dropdownColor: Colors.white,
       items: items.map((DropdownItem item) {
         return DropdownMenuItem<DropdownItem>(
           value: item,
-          child: Text(item.displayText),
+          child: Text(item.displayText, style: const TextStyle(color: textColor)),
         );
       }).toList(),
       onChanged: (DropdownItem? newValue) {
@@ -511,11 +520,13 @@ class _VisitScreenState extends State<VisitScreen> {
       setState(() {
         _imageFile = pickedFile;
       });
+      // Automatically get location after taking picture
+      await _getLocation();
     }
   }
 
   Future<void> _checkRootJailbreak() async {
-    bool detected = await RootJailbreakDetector.isRooted();
+    bool detected = await SafeDevice.isJailBroken;
       setState(() {
         _isRootedOrJailbroken = detected;
       });
@@ -524,16 +535,13 @@ class _VisitScreenState extends State<VisitScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Device Already Jailbreak'),
+        title: const Text('Device Already Jailbreak', style: TextStyle(color: errorColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: const [
             Text('Your Device Already Rooted !, Please consider to un-root your device and try again !'),
-            const SizedBox(height: 10),
-            // Text('Jarak antara GPS dan IP: ${distance.toStringAsFixed(2)} km'),
-            // if (vpnDetected) const Text('VPN Terdeteksi'),
-            
+            SizedBox(height: 10),
           ],
         ),
         actions: [
@@ -541,18 +549,14 @@ class _VisitScreenState extends State<VisitScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               Navigator.pop(context);
-
             },
-            child: const Text('OK'),
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
           ),
         ],
       ),
     );
       }
     }
-
-  
-
 
   Future<void> _getLocation() async {
     setState(() {
@@ -567,7 +571,10 @@ class _VisitScreenState extends State<VisitScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aktifkan layanan lokasi terlebih dahulu')),
+          const SnackBar(
+            content: Text('Aktifkan layanan lokasi terlebih dahulu'),
+            backgroundColor: warningColor,
+          ),
         );
         return;
       }
@@ -577,7 +584,10 @@ class _VisitScreenState extends State<VisitScreen> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Izin lokasi diperlukan untuk melanjutkan')),
+            const SnackBar(
+              content: Text('Izin lokasi diperlukan untuk melanjutkan'),
+              backgroundColor: warningColor,
+            ),
           );
           return;
         }
@@ -585,7 +595,10 @@ class _VisitScreenState extends State<VisitScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aktifkan izin lokasi di pengaturan device')),
+          const SnackBar(
+            content: Text('Aktifkan izin lokasi di pengaturan device'),
+            backgroundColor: warningColor,
+          ),
         );
         return;
       }
@@ -596,32 +609,81 @@ class _VisitScreenState extends State<VisitScreen> {
 
       // Panggil API deteksi Fake GPS
       try {
-         final fakeGpsResponse = await _checkFakeGps(
-        latitude: position.latitude,
-        longitude: position.longitude,
-          );
+
+         // Check Developer Mode Enable or Not
+
+            bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
+            bool isRealDevice = await SafeDevice.isRealDevice;
+
+            if (isRealDevice == false){
+
+              String msg = 'Kamu Sedang Di Emulator Mode';
+              await _showRealDevice(
+                  context,
+                  msg,
+              );
+            }
+            if (isDevelopmentModeEnable == true){
+
+              String msg = 'Silakan Matikan Mode Pengembang Di Pengaturan Device Anda Terlebih Dahulu, Kemudian Coba Lagi !';
+              await _showDeveloperModeEnabled(
+                  context,
+                  msg,
+              );
+              return; // Batalkan proses pengambilan lokasi
+            }
+
+            // Fake GPS/Mock Location
+
+            bool isPositionMocked = position.isMocked;
+            bool isMockLocation = await SafeDevice.isMockLocation;
           
-          if (fakeGpsResponse['status'] == 'warning') {
-            setState(() {
-              _fakeGpsDetected = true;
-              _fakeGpsMessage = fakeGpsResponse['message'];
-            });
-            // Tampilkan dialog peringatan dan batalkan pengambilan lokasi
-            await _showFakeGpsWarningDialog(
-              context,
-              fakeGpsResponse['message'],
-              fakeGpsResponse['distance_km'],
-              fakeGpsResponse['vpn_detected'],
-            );
+
+            if (isMockLocation == true || isPositionMocked ==  true){
+                  String msg= 'Fake GPS Terdeteksi,  Silakan Matikan Terlebih Dahulu App FakeGPS/ Aplikasi Serupa';
+                  setState(() {
+                  _fakeGpsDetected = true;
+                  _fakeGpsMessage = msg;
+                });
+              await _showFakeGpsWarningDialog(
+                  context,
+                  msg,
+              );
+              return; // Batalkan proses pengambilan lokasi
+            }
+
+          //  final fakeGpsResponse = await _checkFakeGps(
+          // latitude: position.latitude,
+          // longitude: position.longitude,
+          //   );
             
-            return; // Batalkan proses pengambilan lokasi
-          }
+          //   if (fakeGpsResponse['status'] == 'warning') {
+              
+            
+          //     // Tampilkan dialog peringatan dan batalkan pengambilan lokasi
+            
+              
+        
+          //   } 
+          // else if (fakeGpsResponse['status'] == 'success'){
+          //    await _showFakeGpsSuccessDialog(
+          //     context,
+          //     fakeGpsResponse['message'],
+          //     fakeGpsResponse['distance_km'],
+          //     fakeGpsResponse['vpn_detected'],
+          //     fakeGpsResponse['gps_location'],
+          //     fakeGpsResponse['ip_location'],
+          //     fakeGpsResponse['ip'],
+          //     fakeGpsResponse['org']
+          //   );
+          // }
 
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed To check FakeGPS!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Failed To check FakeGPS!'),
+            backgroundColor: errorColor,
+            duration: const Duration(seconds: 2),
           ),
         );
         return;
@@ -657,7 +719,10 @@ class _VisitScreenState extends State<VisitScreen> {
           }
         } on SocketException catch (_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tidak ada koneksi internet untuk mendapatkan nama daerah')),
+            const SnackBar(
+              content: Text('Tidak ada koneksi internet untuk mendapatkan nama daerah'),
+              backgroundColor: warningColor,
+            ),
           );
           setState(() {
             _location = cacheKey;
@@ -666,7 +731,10 @@ class _VisitScreenState extends State<VisitScreen> {
           });
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal mendapatkan nama daerah: $e')),
+            SnackBar(
+              content: Text('Gagal mendapatkan nama daerah: $e'),
+              backgroundColor: errorColor,
+            ),
           );
           setState(() {
             _location = cacheKey;
@@ -677,7 +745,10 @@ class _VisitScreenState extends State<VisitScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed To Get Location: $e')),
+        SnackBar(
+          content: Text('Failed To Get Location: $e'),
+          backgroundColor: errorColor,
+        ),
       );
     } finally {
       setState(() {
@@ -686,11 +757,10 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
-   Future<void> _showFakeGpsWarningDialog(
+  Future<void> _showFakeGpsWarningDialog(
     BuildContext context,
     String message,
-    double distance,
-    bool vpnDetected,
+
   ) async {
     bool continueAnyway = false;
     
@@ -698,32 +768,132 @@ class _VisitScreenState extends State<VisitScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Location Warning!'),
+        title: const Text('Location Warning!', style: TextStyle(color: warningColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message),
+            Text('${message}'),
             const SizedBox(height: 10),
-            // Text('Jarak antara GPS dan IP: ${distance.toStringAsFixed(2)} km'),
-            // if (vpnDetected) const Text('VPN Terdeteksi'),
-            
           ],
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
               Navigator.pop(context);
             },
-            child: const Text('OK'),
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
           ),
         ],
       ),
     );
-
   }
 
+  Future<void> _showDeveloperModeEnabled(
+    BuildContext context,
+    String message,
+
+  ) async {
+    bool continueAnyway = false;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Developer Mode Aktif!', style: TextStyle(color: warningColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${message}'),
+            const SizedBox(height: 10),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Navigator.of(context).pop();
+              Navigator.pop(context);
+            },
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+    
+  Future<void> _showRealDevice(
+    BuildContext context,
+    String message,
+
+  ) async {
+    bool continueAnyway = false;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Informasi !', style: TextStyle(color: accentColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${message}'),
+            const SizedBox(height: 10),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Navigator.of(context).pop();
+              Navigator.pop(context);
+            },
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _showFakeGpsSuccessDialog(
+    BuildContext context,
+    String message,
+    double distance,
+    bool vpnDetected,
+    List gpslocation,
+    List iplocation,
+    String ip ,
+    String org
+
+  ) async {
+    bool continueAnyway = false;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Success!', style: TextStyle(color: successColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${message} , Jarak : ${distance} , Status VPN : ${vpnDetected.toString()} , GPS Laltlong : (${gpslocation[0]},${gpslocation[1]}) , IP Laltlong : (${iplocation[0]},${iplocation[1]}) , IP : ${ip} , ORG: ${org}' ),
+            const SizedBox(height: 10),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Navigator.of(context).pop();
+              Navigator.pop(context);
+            },
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
   Future<Map<String, dynamic>> _checkFakeGps({
     required double latitude,
     required double longitude,
@@ -744,7 +914,6 @@ class _VisitScreenState extends State<VisitScreen> {
           'root_jailbreak': _isRootedOrJailbroken, // Asumsi device tidak di-root
         }),
       );
-
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -768,6 +937,7 @@ class _VisitScreenState extends State<VisitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Harap ambil lokasi terlebih dahulu!'),
+            backgroundColor: warningColor,
             duration: Duration(seconds: 2),
           ),
         );
@@ -778,6 +948,7 @@ class _VisitScreenState extends State<VisitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Harap ambil gambar terlebih dahulu!'),
+            backgroundColor: warningColor,
             duration: Duration(seconds: 2),
           ),
         );
@@ -787,7 +958,9 @@ class _VisitScreenState extends State<VisitScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => Center(
+          child: CircularProgressIndicator(color: primaryColor),
+        ),
       );
 
       try {
@@ -834,6 +1007,7 @@ class _VisitScreenState extends State<VisitScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Data berhasil disimpan!'),
+              backgroundColor: successColor,
               duration: Duration(seconds: 2),
             ),
           );
@@ -842,6 +1016,7 @@ class _VisitScreenState extends State<VisitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Gagal menyimpan data!'),
+            backgroundColor: errorColor,
             duration: Duration(seconds: 2),
           ),
         );
@@ -859,64 +1034,3 @@ class _VisitScreenState extends State<VisitScreen> {
   }
 }
 
-
-class RootJailbreakDetector {
-  static Future<bool> isRooted() async {
-    if (kIsWeb) return false;
-
-    if (Platform.isAndroid) {
-      List<String> paths = [
-        '/system/app/Superuser.apk',
-        '/sbin/su',
-        '/system/bin/su',
-        '/system/xbin/su',
-        '/data/local/xbin/su',
-        '/data/local/bin/su',
-        '/system/sd/xbin/su',
-        '/system/bin/failsafe/su',
-        '/data/local/su',
-      ];
-
-      for (var path in paths) {
-        if (await File(path).exists()) {
-          return true;
-        }
-      }
-
-      try {
-        final tags = await File('/system/build.prop').readAsString();
-        if (tags.contains('test-keys')) {
-          return true;
-        }
-      } catch (e) {}
-
-      try {
-        ProcessResult result = await Process.run('which', ['su']);
-        if (result.stdout.toString().isNotEmpty) {
-          return true;
-        }
-      } catch (e) {}
-
-      return false;
-    } else if (Platform.isIOS) {
-      List<String> jailbreakPaths = [
-        '/Applications/Cydia.app',
-        '/Library/MobileSubstrate/MobileSubstrate.dylib',
-        '/bin/bash',
-        '/usr/sbin/sshd',
-        '/etc/apt',
-      ];
-
-      for (var path in jailbreakPaths) {
-        if (await File(path).exists()) {
-          return true;
-        }
-      }
-
-      // Dummy cek url scheme jailbreak, skip dan return false
-      return false;
-    } else {
-      return false;
-    }
-  }
-}
