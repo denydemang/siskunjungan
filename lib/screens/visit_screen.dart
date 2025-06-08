@@ -50,7 +50,9 @@ class _VisitScreenState extends State<VisitScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _projectController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
-  
+  double? lastLatitude;
+  double? lastLongitude;
+  bool isTeleport = false;
   XFile? _imageFile;
   String? _location;
   String? _namaDaerah;
@@ -609,29 +611,64 @@ class _VisitScreenState extends State<VisitScreen> {
 
       // Panggil API deteksi Fake GPS
       try {
-
+        
          // Check Developer Mode Enable or Not
 
-            bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
+      
             bool isRealDevice = await SafeDevice.isRealDevice;
 
             if (isRealDevice == false){
 
               String msg = 'Kamu Sedang Di Emulator Mode';
-              await _showRealDevice(
+              await _showRealDeviceDialog(
                   context,
                   msg,
               );
+              return;
             }
+            bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
             if (isDevelopmentModeEnable == true){
 
               String msg = 'Silakan Matikan Mode Pengembang Di Pengaturan Device Anda Terlebih Dahulu, Kemudian Coba Lagi !';
-              await _showDeveloperModeEnabled(
+              await _showDeveloperModeEnabledDialog(
                   context,
                   msg,
               );
               return; // Batalkan proses pengambilan lokasi
             }
+
+            double distance = 0;
+             // Teleport check (loncat lokasi ekstrem)
+            if (lastLatitude != null && lastLongitude != null) {
+              distance = Geolocator.distanceBetween(
+                lastLatitude!,
+                lastLongitude!,
+                position.latitude,
+                position.longitude,
+              );
+
+              if (distance > 10000) {
+                // 10 km loncatan
+                isTeleport = true;
+                
+              } else {
+                isTeleport = false;
+              }
+            }
+            int distanceinKM = (distance / 100).round();
+            if (isTeleport == true) {
+
+             await _showLoncatLokasiDialog(
+                  context,
+                  'Terdapat Perbedaan Lokasi Yang Signifikan dengan Lokasi Sebelumnya, Distance Gap :  $distanceinKM Km',
+              );
+                return;
+            }
+             // Simpan posisi terakhir
+            lastLatitude = position.latitude;
+            lastLongitude = position.longitude;
+
+ 
 
             // Fake GPS/Mock Location
 
@@ -790,7 +827,40 @@ class _VisitScreenState extends State<VisitScreen> {
     );
   }
 
-  Future<void> _showDeveloperModeEnabled(
+  Future<void> _showLoncatLokasiDialog(
+    BuildContext context,
+    String message,
+
+  ) async {
+    bool continueAnyway = false;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Warning!', style: TextStyle(color: warningColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${message}'),
+            const SizedBox(height: 10),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Navigator.of(context).pop();
+              Navigator.pop(context);
+            },
+            child: const Text('OK', style: TextStyle(color: primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDeveloperModeEnabledDialog(
     BuildContext context,
     String message,
 
@@ -823,7 +893,7 @@ class _VisitScreenState extends State<VisitScreen> {
     );
   }
     
-  Future<void> _showRealDevice(
+  Future<void> _showRealDeviceDialog(
     BuildContext context,
     String message,
 
@@ -1004,6 +1074,8 @@ class _VisitScreenState extends State<VisitScreen> {
           _descriptionController.clear();
           _projectController.clear();
           _lokasiController.clear();
+          lastLatitude = null;
+          lastLongitude = null;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Data berhasil disimpan!'),
