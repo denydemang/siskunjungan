@@ -516,6 +516,7 @@ class _VisitScreenState extends State<VisitScreen> {
       source: ImageSource.camera,
       maxWidth: 800,
       imageQuality: 80,
+      preferredCameraDevice: CameraDevice.front, 
     );
     
     if (pickedFile != null) {
