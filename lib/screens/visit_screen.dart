@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:camera/camera.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:sisflutterproject/services/session_service.dart';
@@ -10,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:safe_device/safe_device.dart';
+import 'package:path/path.dart' show join;
+import 'package:path_provider/path_provider.dart';
 
 // Color Scheme based on the dashboard image
 const Color primaryColor =  Color(0xFF009688);// Dark blue from dashboard header
@@ -20,6 +23,7 @@ const Color errorColor = Color(0xFFE53935);     // Red for errors
 const Color successColor = Color(0xFF43A047);   // Green for success messages
 const Color warningColor = Color(0xFFFFA000);   // Amber for warnings
 const Color disabledColor = Color(0xFFBDBDBD);  // Gray for disabled elements
+late List<CameraDescription> _cameras;
 
 class DropdownItem {
   final String value;
@@ -36,6 +40,8 @@ class VisitScreen extends StatefulWidget {
 }
 
 class _VisitScreenState extends State<VisitScreen> {
+
+
   bool? _isRootedOrJailbroken;
   bool _fakeGpsDetected = false;
   String _fakeGpsMessage = '';
@@ -111,6 +117,10 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
+  Future<void> _initializeCamera() async {
+  _cameras = await availableCameras();
+  }
+
   @override
   void dispose() {
     _companyController.dispose();
@@ -130,6 +140,7 @@ class _VisitScreenState extends State<VisitScreen> {
     super.initState();
     _loadProjects();
     _checkRootJailbreak();
+    _initializeCamera();
   }
 
   @override
@@ -351,10 +362,10 @@ class _VisitScreenState extends State<VisitScreen> {
                         'Gambar berhasil diambil',
                         style: TextStyle(color: successColor, fontSize: 16),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Image.file(
                         File(_imageFile!.path),
-                        height: 150,
+                        height: 500,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
@@ -509,25 +520,97 @@ class _VisitScreenState extends State<VisitScreen> {
       ),
     );
   }
+  
 
-  Future<void> _takePicture() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 800,
-      imageQuality: 80,
-      preferredCameraDevice: CameraDevice.front, 
+  bool _isTakingPicture = false;
+ Future<void> _takePicture() async {
+  
+    final frontCamera = _cameras.firstWhere(
+      (camera) => camera.lensDirection == CameraLensDirection.front,
     );
-    
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = pickedFile;
-      });
-      // Automatically get location after taking picture
-      await _getLocation();
-    }
-  }
 
+    final CameraController _controller = CameraController(
+      frontCamera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
+
+    await _controller.initialize();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CameraPreview(_controller),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.close),
+                      label: const Text("Batal"),
+                      onPressed: () async {
+                        if (!_isTakingPicture) {
+                          await _controller.dispose();
+                          Navigator.of(ctx).pop();
+                        }
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.camera),
+                      label: const Text("Jepret"),
+                      onPressed: () async {
+                        if (_isTakingPicture) return;
+                        _isTakingPicture = true;
+
+                        try {
+                          final tempDir = await getTemporaryDirectory();
+                          final path = join(
+                            tempDir.path,
+                            '${DateTime.now().millisecondsSinceEpoch}.jpg',
+                          );
+
+                          final XFile picture = await _controller.takePicture();
+                          await picture.saveTo(path);
+
+                          setState(() {
+                            _imageFile = picture;
+                          });
+
+                          await _getLocation();
+                        } catch (e) {
+                          print("❌ Error: $e");
+                        } finally {
+                          _isTakingPicture = false;
+                          await _controller.dispose();
+                          if (context.mounted) Navigator.of(ctx).pop();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
   Future<void> _checkRootJailbreak() async {
     bool detected = await SafeDevice.isJailBroken;
       setState(() {
