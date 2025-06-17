@@ -9,7 +9,7 @@ import 'package:sisflutterproject/services/session_service.dart';
 import 'package:sisflutterproject/services/visit_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+// import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:safe_device/safe_device.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';

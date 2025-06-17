@@ -40,7 +40,7 @@ class LoginController {
       // // Navigate to welcome screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => WelcomeScreen(name: result['data']['name']),
+          builder: (context) => WelcomeScreen(name: result['data']['name'] , divisi: result['data']['divisi'], authToken:  result['data']['token']),
         ),
       );
       return true;

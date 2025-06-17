@@ -1,15 +1,26 @@
 // screens/welcome_screen.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:sisflutterproject/screens/login_screen.dart';
+import 'package:sisflutterproject/services/session_service.dart';
+import 'dart:convert';
+
 import '../controllers/dashboard_controller.dart';
 import '../screens/visit_screen.dart';
 
-
-
 class WelcomeScreen extends StatefulWidget {
   final String name;
+  final String divisi;
+  final String authToken; // Add auth token parameter
   final DashboardController _dashboardController = DashboardController();
 
-  WelcomeScreen({super.key, required this.name});
+  WelcomeScreen({
+    super.key, 
+    required this.name, 
+    required this.divisi,
+    required this.authToken,
+  });
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -17,6 +28,143 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   int _currentIndex = 0;
+  final Color _primaryColor = const Color(0xFF00897B);
+  final Color _secondaryColor = const Color(0xFF4DB6AC);
+  final Color _accentColor = const Color(0xFFFFA000);
+  
+  List<dynamic> leaderboardData = [];
+  List<dynamic> dailyweeklyData = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLeaderboardData();
+    _fetchWeeklyMonthlyData();
+  }
+
+  Future<void> _fetchLeaderboardData() async {
+
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = '';
+      });
+
+      final response = await http.get(
+        Uri.parse('https://fakelocation.warungkode.com/api/kunjungan/top'),
+        headers: {
+        'Authorization': widget.authToken,
+        'Accept': 'application/json',
+        },
+      );
+      // print(widget.authToken);
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        if (jsonResponse['success'] == 'Successfully Get Data Top Kunjungan') {
+          setState(() {
+            leaderboardData = jsonResponse['data'];
+            isLoading = false;
+          });
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        await SessionService.clearSession();
+         Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Gagal memuat data leaderboard: $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      await SessionService.clearSession();
+         Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+        );
+    }
+  }
+
+    Future<void> _fetchWeeklyMonthlyData() async {
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = '';
+      });
+      String? idUser = await SessionService.getID();
+      final response = await http.get(
+        Uri.parse('https://fakelocation.warungkode.com/api/kunjungan/group/${idUser}'),
+        headers: {
+        'Authorization': widget.authToken,
+        'Accept': 'application/json',
+        },
+      );
+      // print(widget.authToken);
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        setState(() {
+          dailyweeklyData = jsonResponse;
+          isLoading = false;
+        });
+      
+      } else {
+        await SessionService.clearSession();
+         Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Gagal memuat data leaderboard: $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      await SessionService.clearSession();
+         Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+        );
+    }
+  }
+
+
+  String get currentMonthYear {
+    final now = DateTime.now();
+    final monthName = DateFormat('MMMM').format(now);
+    final year = DateFormat('yyyy').format(now);
+    
+    final idMonths = {
+      'January': 'Januari',
+      'February': 'Februari',
+      'March': 'Maret',
+      'April': 'April',
+      'May': 'Mei',
+      'June': 'Juni',
+      'July': 'Juli',
+      'August': 'Agustus',
+      'September': 'September',
+      'October': 'Oktober',
+      'November': 'November',
+      'December': 'Desember'
+    };
+    
+    return '${idMonths[monthName] ?? monthName} $year';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,215 +175,366 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         centerTitle: true,
         automaticallyImplyLeading: false,
         elevation: 0,
-        backgroundColor: Colors.teal,
+        backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Header
-            Text(
-              'Halo, ${widget.name}!',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Apa yang mau kamu cari hari ini?',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 30),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+              ? Center(child: Text(errorMessage))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SELAMAT DATANG ! ',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _accentColor,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2,
+                              color: Colors.black.withOpacity(0.1),
+                              offset: const Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${widget.name} (${widget.divisi})',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2,
+                              color: Colors.black.withOpacity(0.1),
+                              offset: const Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Divider(color: _primaryColor.withOpacity(0.2), thickness: 1),
+                      const SizedBox(height: 20),
 
-            // Leaderboard Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                      // Leaderboard Section
+                      Row(
+                        children: [
+                          Icon(Icons.leaderboard, color: _accentColor, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Leaderboard $currentMonthYear',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ...leaderboardData.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final data = entry.value;
+                        return Column(
+                          children: [
+                            _buildLeaderItem(
+                              name: data['name'] ?? 'No Name',
+                              department: data['divisi'] ?? 'No Division',
+                              visits: '${data['jmlh'] ?? 0} Kunjungan',
+                              rank: index + 1,
+                            ),
+                            if (index < leaderboardData.length - 1)
+                              const SizedBox(height: 12),
+                          ],
+                        );
+                      }),
+                      const SizedBox(height: 30),
+                      Divider(color: _primaryColor.withOpacity(0.2), thickness: 1),
+                      const SizedBox(height: 20),
+
+                      // My Visits Section
+                      Row(
+                        children: [
+                          Icon(Icons.place, color: _accentColor, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            'KUNJUNGAN SAYA',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDailyMonthlyItem(
+                        name: widget.name,
+                        department: widget.divisi,
+                        visits:  dailyweeklyData.length > 0 ? dailyweeklyData[0] : {"daily_visits" : '0' ,"weekly_visits" : '0' ,"monthly_visits" : '0' }, // You can add API for my visits later
+                        isHighlighted: true,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Leaderboard 2025',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLeaderboardCard(
-                    rank: 1,
-                    title: 'Buana Cicalengka Raya',
-                    description: 'Business Panel Information',
-                    department: 'Marketing',
-                    amount: 'Rp 30.000.000.000',
-                    growth: '▲ 1,100',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLeaderboardCard(
-                    rank: 2,
-                    title: 'Buana Cicalengka Raya',
-                    description: 'Business Panel Information',
-                    department: 'Marketing',
-                    amount: 'Rp 20.000.000.000',
-                    growth: '▲ 1,100',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLeaderboardCard(
-                    rank: 3,
-                    title: 'Buana Cicalengka Raya',
-                    description: 'Business Panel Information',
-                    department: 'Marketing',
-                    amount: 'Rp 10.000.000.000',
-                    growth: '▲ 1,100',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+                ),
       bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 
-  Widget _buildLeaderboardCard({
-    required int rank,
-    required String title,
-    required String description,
+  Widget _buildLeaderItem({
+    required String name,
     required String department,
-    required String amount,
-    required String growth,
+    required String visits,
+    int? rank,
+    bool isHighlighted = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        color: isHighlighted ? _primaryColor.withOpacity(0.1) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHighlighted ? _primaryColor : Colors.grey[200]!,
+          width: isHighlighted ? 1.5 : 1,
+        ),
+        boxShadow: [
+          if (!isHighlighted)
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Rank Badge
-          Container(
-            width: 30,
-            height: 30,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _getRankColor(rank),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              rank.toString(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (rank != null)
+            Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _getRankColor(rank),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    rank.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(description),
-                const SizedBox(height: 4),
-                Text(
-                  department,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isHighlighted ? _primaryColor : Colors.black,
                     ),
-                    Text(
-                      growth,
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
+            )
+          else
+            Text(
+              name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isHighlighted ? _primaryColor : Colors.black,
+              ),
             ),
+          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          Text(
+            department,
+            style: TextStyle(
+              color: isHighlighted ? _primaryColor : Colors.grey[800],
+              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                visits,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isHighlighted ? _primaryColor : Colors.black,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+    Widget _buildDailyMonthlyItem({
+     required String name,
+    required String department,
+    required Map<String, dynamic> visits, // e.g., {'daily': '10', 'weekly': '50', 'monthly': '200'}
+    int? rank,
+    bool isHighlighted = false,
+  }) {
+    final nameText = Text(
+    name,
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+      color: isHighlighted ? _primaryColor : Colors.black,
+    ),
+  );
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: isHighlighted ? _primaryColor.withOpacity(0.1) : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: isHighlighted ? _primaryColor : Colors.grey[200]!,
+        width: isHighlighted ? 1.5 : 1,
+      ),
+      boxShadow: [
+        if (!isHighlighted)
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (rank != null)
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _getRankColor(rank),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  rank.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: nameText),
+            ],
+          )
+        else
+          nameText,
+        const SizedBox(height: 12),
+        Text(
+          department,
+          style: TextStyle(
+            color: isHighlighted ? _primaryColor : Colors.grey[800],
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildVisitStat("Daily", visits['daily_visits'].toString(), isHighlighted),
+            _buildVisitStat("Weekly", visits['weekly_visits'].toString(), isHighlighted),
+            _buildVisitStat("Monthly", visits['monthly_visits'].toString(), isHighlighted),
+          ],
+        ),
+      ],
+    ),
+  );
+  }
+
+  Widget _buildVisitStat(String label, String value, bool isHighlighted) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '(${label})',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[600],
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isHighlighted ? _primaryColor : Colors.black,
+          fontSize: 14,
+        ),
+      ),
+    ],
+  );
+}
+
   Color _getRankColor(int rank) {
     switch (rank) {
       case 1:
-        return Colors.amber[700]!;
+        return _accentColor;
       case 2:
-        return Colors.blueGrey[400]!;
+        return Colors.blueGrey;
       case 3:
-        return Colors.brown[400]!;
+        return Colors.brown;
       default:
-        return Colors.teal;
+        return _secondaryColor;
     }
   }
 
   Widget _buildBottomNavBar(BuildContext context) {
     return BottomNavigationBar(
-      items: const [
+      items: [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
+          activeIcon: Icon(Icons.home, color: _primaryColor),
           label: 'Home',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.place_outlined),
-          activeIcon: Icon(Icons.place),
+          activeIcon: Icon(Icons.place, color: _primaryColor),
           label: 'Visit',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.logout_outlined),
-          activeIcon: Icon(Icons.logout),
+          activeIcon: Icon(Icons.logout, color: _primaryColor),
           label: 'Log Out',
         ),
       ],
       currentIndex: _currentIndex,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.teal,
+      selectedItemColor: _primaryColor,
       unselectedItemColor: Colors.grey,
       showUnselectedLabels: true,
-      elevation: 5,
+      elevation: 8,
+      backgroundColor: Colors.white,
+      selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
       onTap: (index) => _handleBottomNavTap(context, index),
     );
   }
@@ -247,7 +546,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     switch (index) {
       case 0: // Home
-        // Tidak perlu navigasi jika sudah di home
         break;
       
       case 1: // Visit
@@ -259,7 +557,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         
       case 2: // Log Out
         widget._dashboardController.showLogoutConfirmation(context);
-  // Pindahkan logika setelah konfirmasi ke dalam controller
         break;
     }
   }
