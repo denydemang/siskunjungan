@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:camera/camera.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:sisflutterproject/screens/login_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 import 'package:sisflutterproject/services/visit_service.dart';
 import 'package:http/http.dart' as http;
@@ -93,6 +94,27 @@ class _VisitScreenState extends State<VisitScreen> {
         _projectOptions = projects;
       });
     } catch (e) {
+      if (e.toString().toLowerCase().contains('session telah habis') ){
+          ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session Habis')),
+        );
+        await SessionService.clearSession();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+          (Route<dynamic> route) => false,
+        );
+        setState(() {
+            _projectError = e.toString();
+            _projectOptions = [
+              DropdownItem(value: '0', displayText: 'Belum Dapat'),
+              DropdownItem(value: '1', displayText: 'Database'),
+              DropdownItem(value: '2', displayText: 'Potensi'),
+              DropdownItem(value: '3', displayText: 'Prospek'),
+              DropdownItem(value: '4', displayText: 'Hot Prospek'),
+              DropdownItem(value: '5', displayText: 'Booking'),
+            ];
+          });
+      } else{
       setState(() {
         _projectError = e.toString();
         _projectOptions = [
@@ -110,6 +132,8 @@ class _VisitScreenState extends State<VisitScreen> {
           backgroundColor: errorColor,
         ),
       );
+      }
+     
     } finally {
       setState(() {
         _isLoadingProjects = false;
@@ -708,7 +732,7 @@ class _VisitScreenState extends State<VisitScreen> {
                   context,
                   msg,
               );
-              return;
+              // return;
             }
             bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
             if (isDevelopmentModeEnable == true){
@@ -1167,6 +1191,16 @@ class _VisitScreenState extends State<VisitScreen> {
               duration: Duration(seconds: 2),
             ),
           );
+        }
+        else if (response.containsKey('errorSession')){
+          ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session Habis')),
+          );
+            await SessionService.clearSession();
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

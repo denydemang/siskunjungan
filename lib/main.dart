@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/session_service.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Untuk initializeDateFormatting
 
 void main() async {
    
   WidgetsFlutterBinding.ensureInitialized();
-  
+    
+  // Inisialisasi Intl
+  await initializeDateFormatting('id_ID', null); 
+  Intl.defaultLocale = 'id_ID';
   final tokenSession = await SessionService.getToken();
   final nameSession = await SessionService.getName();
   final divisiSession = await SessionService.getDivisi();

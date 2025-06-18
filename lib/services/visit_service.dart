@@ -5,8 +5,8 @@ import 'package:sisflutterproject/screens/visit_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 
 class VisitService {
-  static const String _baseUrl = 'https://fakelocation.warungkode.com/api'; 
-
+  // static const String _baseUrl = 'https://fakelocation.warungkode.com/api'; 
+  static const String _baseUrl = 'https://fakelocation.warungkode.com/api';
   static Future<Map> submitVisit({
     required String? projectId,
     required String? namaKnj,
@@ -25,6 +25,7 @@ class VisitService {
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/kunjungan'));
       final token = await SessionService.getToken();
+      // final token = '304cbaf2-1c24-4697-bce2-e040d771d29b';
       final userID = await SessionService.getID();
       if (token == null || token.isEmpty) {
         throw Exception('User not authenticated - Please login again');
@@ -81,7 +82,14 @@ class VisitService {
       // Check response
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(responseBody);
-      } else {
+
+     
+      }  else if (response.statusCode == 401){
+        return ({
+          'errorSession' : "Sesion Sudah Habis"
+        });
+      }
+      else {
          throw Exception('error: Terdapat Error Saat Mengirim Data ,Code : ${response.statusCode}');
       }
     } catch (e) {
@@ -93,6 +101,7 @@ class VisitService {
 static Future<List<DropdownItem>> fetchProjects() async {
   try {
     final token = await SessionService.getToken();
+    // final token = '304cbaf2-1c24-4697-bce2-e040d771d29b';
     if (token == null) throw Exception('Token tidak tersedia');
 
     final response = await http.get(
@@ -112,7 +121,12 @@ static Future<List<DropdownItem>> fetchProjects() async {
           displayText: project['nama_pro'],
         );
       }).toList();
-    } else {
+    
+    } 
+    else if (response.statusCode == 401){
+       throw Exception('Session Telah Habis');
+    }
+    else {
       throw Exception('Gagal memuat project: ${response.statusCode}');
     }
   } catch (e) {
