@@ -4,8 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sisflutterproject/screens/visit_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 
+
+
 class VisitService {
-  // static const String _baseUrl = 'https://fakelocation.warungkode.com/api'; 
+  // static const String _baseUrl = 'http://192.168.192.98:8080/api'; 
   static const String _baseUrl = 'https://fakelocation.warungkode.com/api';
   static Future<Map> submitVisit({
     required String? projectId,

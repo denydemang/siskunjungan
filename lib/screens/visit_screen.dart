@@ -14,16 +14,18 @@ import 'dart:convert';
 import 'package:safe_device/safe_device.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 // Color Scheme based on the dashboard image
-const Color primaryColor =  Color(0xFF009688);// Dark blue from dashboard header
-const Color accentColor =  Color(0xFF4CAF50);   // Green from the ▲ indicators
+const Color primaryColor = Color(0xFF009688); // Dark blue from dashboard header
+const Color accentColor = Color(0xFF4CAF50); // Green from the ▲ indicators
 const Color backgroundColor = Color(0xFFF5F5F5); // Light gray background
-const Color textColor = Color(0xFF333333);     // Dark text color
-const Color errorColor = Color(0xFFE53935);     // Red for errors
-const Color successColor = Color(0xFF43A047);   // Green for success messages
-const Color warningColor = Color(0xFFFFA000);   // Amber for warnings
-const Color disabledColor = Color(0xFFBDBDBD);  // Gray for disabled elements
+const Color textColor = Color(0xFF333333); // Dark text color
+const Color errorColor = Color(0xFFE53935); // Red for errors
+const Color successColor = Color(0xFF43A047); // Green for success messages
+const Color warningColor = Color(0xFFFFA000); // Amber for warnings
+const Color disabledColor = Color(0xFFBDBDBD); // Gray for disabled elements
 late List<CameraDescription> _cameras;
 
 class DropdownItem {
@@ -41,8 +43,6 @@ class VisitScreen extends StatefulWidget {
 }
 
 class _VisitScreenState extends State<VisitScreen> {
-
-
   bool? _isRootedOrJailbroken;
   bool _fakeGpsDetected = false;
   String _fakeGpsMessage = '';
@@ -94,8 +94,8 @@ class _VisitScreenState extends State<VisitScreen> {
         _projectOptions = projects;
       });
     } catch (e) {
-      if (e.toString().toLowerCase().contains('session telah habis') ){
-          ScaffoldMessenger.of(context).showSnackBar(
+      if (e.toString().toLowerCase().contains('session telah habis')) {
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Session Habis')),
         );
         await SessionService.clearSession();
@@ -104,36 +104,35 @@ class _VisitScreenState extends State<VisitScreen> {
           (Route<dynamic> route) => false,
         );
         setState(() {
-            _projectError = e.toString();
-            _projectOptions = [
-              DropdownItem(value: '0', displayText: 'Belum Dapat'),
-              DropdownItem(value: '1', displayText: 'Database'),
-              DropdownItem(value: '2', displayText: 'Potensi'),
-              DropdownItem(value: '3', displayText: 'Prospek'),
-              DropdownItem(value: '4', displayText: 'Hot Prospek'),
-              DropdownItem(value: '5', displayText: 'Booking'),
-            ];
-          });
-      } else{
-      setState(() {
-        _projectError = e.toString();
-        _projectOptions = [
-          DropdownItem(value: '0', displayText: 'Belum Dapat'),
-          DropdownItem(value: '1', displayText: 'Database'),
-          DropdownItem(value: '2', displayText: 'Potensi'),
-          DropdownItem(value: '3', displayText: 'Prospek'),
-          DropdownItem(value: '4', displayText: 'Hot Prospek'),
-          DropdownItem(value: '5', displayText: 'Booking'),
-        ];
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal memuat project: $e'),
-          backgroundColor: errorColor,
-        ),
-      );
+          _projectError = e.toString();
+          _projectOptions = [
+            DropdownItem(value: '0', displayText: 'Belum Dapat'),
+            DropdownItem(value: '1', displayText: 'Database'),
+            DropdownItem(value: '2', displayText: 'Potensi'),
+            DropdownItem(value: '3', displayText: 'Prospek'),
+            DropdownItem(value: '4', displayText: 'Hot Prospek'),
+            DropdownItem(value: '5', displayText: 'Booking'),
+          ];
+        });
+      } else {
+        setState(() {
+          _projectError = e.toString();
+          _projectOptions = [
+            DropdownItem(value: '0', displayText: 'Belum Dapat'),
+            DropdownItem(value: '1', displayText: 'Database'),
+            DropdownItem(value: '2', displayText: 'Potensi'),
+            DropdownItem(value: '3', displayText: 'Prospek'),
+            DropdownItem(value: '4', displayText: 'Hot Prospek'),
+            DropdownItem(value: '5', displayText: 'Booking'),
+          ];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat project: $e'),
+            backgroundColor: errorColor,
+          ),
+        );
       }
-     
     } finally {
       setState(() {
         _isLoadingProjects = false;
@@ -141,8 +140,9 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
+
   Future<void> _initializeCamera() async {
-  _cameras = await availableCameras();
+    _cameras = await availableCameras();
   }
 
   @override
@@ -171,7 +171,8 @@ class _VisitScreenState extends State<VisitScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Form Kunjungan', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Form Kunjungan', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -186,61 +187,65 @@ class _VisitScreenState extends State<VisitScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                
+
                 // Project Dropdown
                 Row(
                   children: [
-                    const Text('Nama Project', style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text('Nama Project',
+                        style: TextStyle(fontSize: 16, color: textColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
                 _isLoadingProjects
-                  ? Center(child: CircularProgressIndicator(color: primaryColor))
-                  : _projectError != null
-                      ? Column(
-                          children: [
-                            _buildDropdownField(
-                              controller: _projectController,
-                              label: '',
-                              icon: Icons.add_home_work,
-                              items: _projectOptions,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Harap pilih project';
-                                }
-                                return null;
-                              },
-                            ),
-                            Text(
-                              _projectError!,
-                              style: const TextStyle(color: errorColor),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.refresh, color: primaryColor),
-                              onPressed: _loadProjects,
-                              tooltip: 'Refresh Data Project',
-                            ),
-                          ],
-                        )
-                      : _buildDropdownField(
-                          controller: _projectController,
-                          label: '',
-                          icon: Icons.add_home_work,
-                          items: _projectOptions,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Harap pilih project';
-                            }
-                            return null;
-                          },
-                        ),
+                    ? Center(
+                        child: CircularProgressIndicator(color: primaryColor))
+                    : _projectError != null
+                        ? Column(
+                            children: [
+                              _buildDropdownField(
+                                controller: _projectController,
+                                label: '',
+                                icon: Icons.add_home_work,
+                                items: _projectOptions,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Harap pilih project';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              Text(
+                                _projectError!,
+                                style: const TextStyle(color: errorColor),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.refresh, color: primaryColor),
+                                onPressed: _loadProjects,
+                                tooltip: 'Refresh Data Project',
+                              ),
+                            ],
+                          )
+                        : _buildDropdownField(
+                            controller: _projectController,
+                            label: '',
+                            icon: Icons.add_home_work,
+                            items: _projectOptions,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Harap pilih project';
+                              }
+                              return null;
+                            },
+                          ),
                 const SizedBox(height: 16),
 
                 // Company Name
                 Row(
                   children: [
-                    const Text('Nama Perusahaan', style: TextStyle(fontSize: 16, color: textColor)),
-                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                    const Text('Nama Perusahaan',
+                        style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)',
+                        style: TextStyle(color: errorColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -260,8 +265,10 @@ class _VisitScreenState extends State<VisitScreen> {
                 // Full Name
                 Row(
                   children: [
-                    const Text('Nama Lengkap', style: TextStyle(fontSize: 16, color: textColor)),
-                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                    const Text('Nama Lengkap',
+                        style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)',
+                        style: TextStyle(color: errorColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -281,8 +288,10 @@ class _VisitScreenState extends State<VisitScreen> {
                 // Job
                 Row(
                   children: [
-                    const Text('Pekerjaan', style: TextStyle(fontSize: 16, color: textColor)),
-                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                    const Text('Pekerjaan',
+                        style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)',
+                        style: TextStyle(color: errorColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -292,9 +301,10 @@ class _VisitScreenState extends State<VisitScreen> {
                   icon: Icons.work,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Category Dropdown
-                const Text('Kategori', style: TextStyle(fontSize: 16, color: textColor)),
+                const Text('Kategori',
+                    style: TextStyle(fontSize: 16, color: textColor)),
                 const SizedBox(height: 4),
                 _buildDropdownField(
                   controller: _categoryController,
@@ -307,8 +317,10 @@ class _VisitScreenState extends State<VisitScreen> {
                 // Phone Number
                 Row(
                   children: [
-                    const Text('No HP', style: TextStyle(fontSize: 16, color: textColor)),
-                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                    const Text('No HP',
+                        style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)',
+                        style: TextStyle(color: errorColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -330,7 +342,8 @@ class _VisitScreenState extends State<VisitScreen> {
                 const SizedBox(height: 16),
 
                 // Source Dropdown
-                const Text('Sumber', style: TextStyle(fontSize: 16, color: textColor)),
+                const Text('Sumber',
+                    style: TextStyle(fontSize: 16, color: textColor)),
                 const SizedBox(height: 4),
                 _buildDropdownField(
                   controller: _sourceController,
@@ -343,8 +356,10 @@ class _VisitScreenState extends State<VisitScreen> {
                 // Visit Description
                 Row(
                   children: [
-                    const Text('Deskripsi Hasil Kunjungan', style: TextStyle(fontSize: 16, color: textColor)),
-                    const Text(' *(Wajib Diisi!)', style: TextStyle(color: errorColor)),
+                    const Text('Deskripsi Hasil Kunjungan',
+                        style: TextStyle(fontSize: 16, color: textColor)),
+                    const Text(' *(Wajib Diisi!)',
+                        style: TextStyle(color: errorColor)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -361,13 +376,15 @@ class _VisitScreenState extends State<VisitScreen> {
                   child: Column(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.camera_alt, size: 40, color: primaryColor),
+                        icon: Icon(Icons.camera_alt,
+                            size: 40, color: primaryColor),
                         onPressed: _takePicture,
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text('Ambil Gambar', style: TextStyle(color: textColor)),
+                          Text('Ambil Gambar',
+                              style: TextStyle(color: textColor)),
                           Text('*', style: TextStyle(color: errorColor)),
                         ],
                       ),
@@ -375,13 +392,14 @@ class _VisitScreenState extends State<VisitScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Preview Image and Location Info
                 if (_imageFile != null)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.check_circle, color: successColor, size: 16),
+                      const Icon(Icons.check_circle,
+                          color: successColor, size: 16),
                       const Text(
                         'Gambar berhasil diambil',
                         style: TextStyle(color: successColor, fontSize: 16),
@@ -394,30 +412,38 @@ class _VisitScreenState extends State<VisitScreen> {
                         fit: BoxFit.cover,
                       ),
                       const SizedBox(height: 16),
-                      
                       if (_isGettingLocation)
-                        Center(child: CircularProgressIndicator(color: primaryColor)),
-                      
+                        Center(
+                            child:
+                                CircularProgressIndicator(color: primaryColor)),
                       if (_location != null)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle, color: successColor, size: 16),
+                            const Icon(Icons.check_circle,
+                                color: successColor, size: 16),
                             const Text(
                               'Lokasi berhasil diambil',
-                              style: TextStyle(color: successColor, fontSize: 12),
+                              style:
+                                  TextStyle(color: successColor, fontSize: 12),
                             ),
                             const Text(
                               'Koordinat:',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor),
                             ),
-                            Text(_location!, style: const TextStyle(color: textColor)),
+                            Text(_location!,
+                                style: const TextStyle(color: textColor)),
                             const SizedBox(height: 8),
                             const Text(
                               'Nama Daerah:',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor),
                             ),
-                            Text(_namaDaerah ?? 'Sedang memuat nama daerah...', style: const TextStyle(color: textColor)),
+                            Text(_namaDaerah ?? 'Sedang memuat nama daerah...',
+                                style: const TextStyle(color: textColor)),
                             const SizedBox(height: 16),
                           ],
                         ),
@@ -428,22 +454,25 @@ class _VisitScreenState extends State<VisitScreen> {
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      backgroundColor: _location == null || _imageFile == null 
-                          ? disabledColor 
+                      backgroundColor: _location == null || _imageFile == null
+                          ? disabledColor
                           : primaryColor,
                     ),
-                    onPressed: (_location == null || _imageFile == null || _isRootedOrJailbroken ==  true) 
-                        ? null 
+                    onPressed: (_location == null ||
+                            _imageFile == null ||
+                            _isRootedOrJailbroken == true)
+                        ? null
                         : _submitForm,
                     child: Text(
                       'SIMPAN',
                       style: TextStyle(
                         fontSize: 18,
-                        color: _location == null || _imageFile == null 
+                        color: _location == null || _imageFile == null
                             ? Colors.grey[800]
                             : Colors.white,
                       ),
@@ -527,7 +556,8 @@ class _VisitScreenState extends State<VisitScreen> {
       items: items.map((DropdownItem item) {
         return DropdownMenuItem<DropdownItem>(
           value: item,
-          child: Text(item.displayText, style: const TextStyle(color: textColor)),
+          child:
+              Text(item.displayText, style: const TextStyle(color: textColor)),
         );
       }).toList(),
       onChanged: (DropdownItem? newValue) {
@@ -535,20 +565,16 @@ class _VisitScreenState extends State<VisitScreen> {
           controller.text = newValue.value;
         }
       },
-      validator: validator != null 
-          ? (value) => validator(value?.value)
-          : null,
+      validator: validator != null ? (value) => validator(value?.value) : null,
       value: items.firstWhere(
         (item) => item.value == controller.text,
         orElse: () => items.first,
       ),
     );
   }
-  
 
   bool _isTakingPicture = false;
- Future<void> _takePicture() async {
-  
+  Future<void> _takePicture() async {
     final frontCamera = _cameras.firstWhere(
       (camera) => camera.lensDirection == CameraLensDirection.front,
     );
@@ -581,7 +607,8 @@ class _VisitScreenState extends State<VisitScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -635,38 +662,41 @@ class _VisitScreenState extends State<VisitScreen> {
       },
     );
   }
+
   Future<void> _checkRootJailbreak() async {
     bool detected = await SafeDevice.isJailBroken;
-      setState(() {
-        _isRootedOrJailbroken = detected;
-      });
-      if(_isRootedOrJailbroken == true){
-             await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Device Already Jailbreak', style: TextStyle(color: errorColor)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Your Device Already Rooted !, Please consider to un-root your device and try again !'),
-            SizedBox(height: 10),
+    setState(() {
+      _isRootedOrJailbroken = detected;
+    });
+    if (_isRootedOrJailbroken == true) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Device Already Jailbreak',
+              style: TextStyle(color: errorColor)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                  'Your Device Already Rooted !, Please consider to un-root your device and try again !'),
+              SizedBox(height: 10),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pop(context);
+              },
+              child: const Text('OK', style: TextStyle(color: primaryColor)),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.pop(context);
-            },
-            child: const Text('OK', style: TextStyle(color: primaryColor)),
-          ),
-        ],
-      ),
-    );
-      }
+      );
     }
+  }
 
   Future<void> _getLocation() async {
     setState(() {
@@ -719,110 +749,99 @@ class _VisitScreenState extends State<VisitScreen> {
 
       // Panggil API deteksi Fake GPS
       try {
-        
-         // Check Developer Mode Enable or Not
+        // Check Developer Mode Enable or Not
 
-      
-            bool isRealDevice = await SafeDevice.isRealDevice;
+        bool isRealDevice = await SafeDevice.isRealDevice;
 
-            if (isRealDevice == false){
+        if (isRealDevice == false) {
+          String msg = 'Kamu Sedang Di Emulator Mode';
+          await _showRealDeviceDialog(
+            context,
+            msg,
+          );
+          // return;
+        }
+        bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
+        if (isDevelopmentModeEnable == true) {
+          String msg =
+              'Silakan Matikan Mode Pengembang Di Pengaturan Device Anda Terlebih Dahulu, Kemudian Coba Lagi !';
+          await _showDeveloperModeEnabledDialog(
+            context,
+            msg,
+          );
+          return; // Batalkan proses pengambilan lokasi
+        }
 
-              String msg = 'Kamu Sedang Di Emulator Mode';
-              await _showRealDeviceDialog(
-                  context,
-                  msg,
-              );
-              // return;
-            }
-            bool isDevelopmentModeEnable = await SafeDevice.isDevelopmentModeEnable;
-            if (isDevelopmentModeEnable == true){
+        double distance = 0;
+        // Teleport check (loncat lokasi ekstrem)
+        if (lastLatitude != null && lastLongitude != null) {
+          distance = Geolocator.distanceBetween(
+            lastLatitude!,
+            lastLongitude!,
+            position.latitude,
+            position.longitude,
+          );
 
-              String msg = 'Silakan Matikan Mode Pengembang Di Pengaturan Device Anda Terlebih Dahulu, Kemudian Coba Lagi !';
-              await _showDeveloperModeEnabledDialog(
-                  context,
-                  msg,
-              );
-              return; // Batalkan proses pengambilan lokasi
-            }
+          if (distance > 10000) {
+            // 10 km loncatan
+            isTeleport = true;
+          } else {
+            isTeleport = false;
+          }
+        }
+        int distanceinKM = (distance / 100).round();
+        if (isTeleport == true) {
+          await _showLoncatLokasiDialog(
+            context,
+            'Terdapat Perbedaan Lokasi Yang Signifikan dengan Lokasi Sebelumnya, Distance Gap :  $distanceinKM Km',
+          );
+          return;
+        }
+        // Simpan posisi terakhir
+        lastLatitude = position.latitude;
+        lastLongitude = position.longitude;
 
-            double distance = 0;
-             // Teleport check (loncat lokasi ekstrem)
-            if (lastLatitude != null && lastLongitude != null) {
-              distance = Geolocator.distanceBetween(
-                lastLatitude!,
-                lastLongitude!,
-                position.latitude,
-                position.longitude,
-              );
+        // Fake GPS/Mock Location
 
-              if (distance > 10000) {
-                // 10 km loncatan
-                isTeleport = true;
-                
-              } else {
-                isTeleport = false;
-              }
-            }
-            int distanceinKM = (distance / 100).round();
-            if (isTeleport == true) {
+        bool isPositionMocked = position.isMocked;
+        bool isMockLocation = await SafeDevice.isMockLocation;
 
-             await _showLoncatLokasiDialog(
-                  context,
-                  'Terdapat Perbedaan Lokasi Yang Signifikan dengan Lokasi Sebelumnya, Distance Gap :  $distanceinKM Km',
-              );
-                return;
-            }
-             // Simpan posisi terakhir
-            lastLatitude = position.latitude;
-            lastLongitude = position.longitude;
+        if (isMockLocation == true || isPositionMocked == true) {
+          String msg =
+              'Fake GPS Terdeteksi,  Silakan Matikan Terlebih Dahulu App FakeGPS/ Aplikasi Serupa';
+          setState(() {
+            _fakeGpsDetected = true;
+            _fakeGpsMessage = msg;
+          });
+          await _showFakeGpsWarningDialog(
+            context,
+            msg,
+          );
+          return; // Batalkan proses pengambilan lokasi
+        }
 
- 
+        //  final fakeGpsResponse = await _checkFakeGps(
+        // latitude: position.latitude,
+        // longitude: position.longitude,
+        //   );
 
-            // Fake GPS/Mock Location
+        //   if (fakeGpsResponse['status'] == 'warning') {
 
-            bool isPositionMocked = position.isMocked;
-            bool isMockLocation = await SafeDevice.isMockLocation;
-          
+        //     // Tampilkan dialog peringatan dan batalkan pengambilan lokasi
 
-            if (isMockLocation == true || isPositionMocked ==  true){
-                  String msg= 'Fake GPS Terdeteksi,  Silakan Matikan Terlebih Dahulu App FakeGPS/ Aplikasi Serupa';
-                  setState(() {
-                  _fakeGpsDetected = true;
-                  _fakeGpsMessage = msg;
-                });
-              await _showFakeGpsWarningDialog(
-                  context,
-                  msg,
-              );
-              return; // Batalkan proses pengambilan lokasi
-            }
-
-          //  final fakeGpsResponse = await _checkFakeGps(
-          // latitude: position.latitude,
-          // longitude: position.longitude,
-          //   );
-            
-          //   if (fakeGpsResponse['status'] == 'warning') {
-              
-            
-          //     // Tampilkan dialog peringatan dan batalkan pengambilan lokasi
-            
-              
-        
-          //   } 
-          // else if (fakeGpsResponse['status'] == 'success'){
-          //    await _showFakeGpsSuccessDialog(
-          //     context,
-          //     fakeGpsResponse['message'],
-          //     fakeGpsResponse['distance_km'],
-          //     fakeGpsResponse['vpn_detected'],
-          //     fakeGpsResponse['gps_location'],
-          //     fakeGpsResponse['ip_location'],
-          //     fakeGpsResponse['ip'],
-          //     fakeGpsResponse['org']
-          //   );
-          // }
-
+        //   }
+        // else if (fakeGpsResponse['status'] == 'success'){
+        //    await _showFakeGpsSuccessDialog(
+        //     context,
+        //     fakeGpsResponse['message'],
+        //     fakeGpsResponse['distance_km'],
+        //     fakeGpsResponse['vpn_detected'],
+        //     fakeGpsResponse['gps_location'],
+        //     fakeGpsResponse['ip_location'],
+        //     fakeGpsResponse['ip'],
+        //     fakeGpsResponse['org']
+        //   );
+        // }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -833,7 +852,7 @@ class _VisitScreenState extends State<VisitScreen> {
         );
         return;
       }
-     
+
       String cacheKey = '${position.latitude},${position.longitude}';
       if (_locationCache.containsKey(cacheKey)) {
         setState(() {
@@ -865,7 +884,8 @@ class _VisitScreenState extends State<VisitScreen> {
         } on SocketException catch (_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Tidak ada koneksi internet untuk mendapatkan nama daerah'),
+              content: Text(
+                  'Tidak ada koneksi internet untuk mendapatkan nama daerah'),
               backgroundColor: warningColor,
             ),
           );
@@ -905,15 +925,15 @@ class _VisitScreenState extends State<VisitScreen> {
   Future<void> _showFakeGpsWarningDialog(
     BuildContext context,
     String message,
-
   ) async {
     bool continueAnyway = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Location Warning!', style: TextStyle(color: warningColor)),
+        title: const Text('Location Warning!',
+            style: TextStyle(color: warningColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -938,15 +958,15 @@ class _VisitScreenState extends State<VisitScreen> {
   Future<void> _showLoncatLokasiDialog(
     BuildContext context,
     String message,
-
   ) async {
     bool continueAnyway = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Location Warning!', style: TextStyle(color: warningColor)),
+        title: const Text('Location Warning!',
+            style: TextStyle(color: warningColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -971,15 +991,15 @@ class _VisitScreenState extends State<VisitScreen> {
   Future<void> _showDeveloperModeEnabledDialog(
     BuildContext context,
     String message,
-
   ) async {
     bool continueAnyway = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Developer Mode Aktif!', style: TextStyle(color: warningColor)),
+        title: const Text('Developer Mode Aktif!',
+            style: TextStyle(color: warningColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1000,14 +1020,13 @@ class _VisitScreenState extends State<VisitScreen> {
       ),
     );
   }
-    
+
   Future<void> _showRealDeviceDialog(
     BuildContext context,
     String message,
-
   ) async {
     bool continueAnyway = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -1033,20 +1052,18 @@ class _VisitScreenState extends State<VisitScreen> {
       ),
     );
   }
-  
-  Future<void> _showFakeGpsSuccessDialog(
-    BuildContext context,
-    String message,
-    double distance,
-    bool vpnDetected,
-    List gpslocation,
-    List iplocation,
-    String ip ,
-    String org
 
-  ) async {
+  Future<void> _showFakeGpsSuccessDialog(
+      BuildContext context,
+      String message,
+      double distance,
+      bool vpnDetected,
+      List gpslocation,
+      List iplocation,
+      String ip,
+      String org) async {
     bool continueAnyway = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -1056,7 +1073,8 @@ class _VisitScreenState extends State<VisitScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${message} , Jarak : ${distance} , Status VPN : ${vpnDetected.toString()} , GPS Laltlong : (${gpslocation[0]},${gpslocation[1]}) , IP Laltlong : (${iplocation[0]},${iplocation[1]}) , IP : ${ip} , ORG: ${org}' ),
+            Text(
+                '${message} , Jarak : ${distance} , Status VPN : ${vpnDetected.toString()} , GPS Laltlong : (${gpslocation[0]},${gpslocation[1]}) , IP Laltlong : (${iplocation[0]},${iplocation[1]}) , IP : ${ip} , ORG: ${org}'),
             const SizedBox(height: 10),
           ],
         ),
@@ -1072,24 +1090,27 @@ class _VisitScreenState extends State<VisitScreen> {
       ),
     );
   }
+
   Future<Map<String, dynamic>> _checkFakeGps({
     required double latitude,
     required double longitude,
   }) async {
     try {
-      const String apiUrl = 'https://fakelocation.warungkode.com/api/check-location';
+      const String apiUrl =
+          'https://fakelocation.warungkode.com/api/check-location';
       final token = await SessionService.getToken();
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization' : token.toString()
-          },
+          'Authorization': token.toString()
+        },
         body: json.encode({
           'latitude': latitude,
           'longitude': longitude,
           'image_base64': '', // Kosongkan seperti permintaan
-          'root_jailbreak': _isRootedOrJailbroken, // Asumsi device tidak di-root
+          'root_jailbreak':
+              _isRootedOrJailbroken, // Asumsi device tidak di-root
         }),
       );
 
@@ -1151,20 +1172,20 @@ class _VisitScreenState extends State<VisitScreen> {
         if (_categoryOptions.isNotEmpty && _categoryController.text.isEmpty) {
           _categoryController.text = _categoryOptions.first.value;
         }
+        final File compressed = await compressImage(_imageFile!);
 
         Map response = await VisitService.submitVisit(
-          projectId: _projectController.text,
-          namaKnj: _nameController.text,
-          tglKnj: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-          lokasiknj: _namaDaerah ?? '-',
-          latlongKnj: _location,
-          pekerjaanKnj: _jobController.text,
-          kategoriKnj: _categoryController.text,
-          sumberKnj: _sourceController.text,
-          hasilKnj: _descriptionController.text,  
-          imageFile: _imageFile,
-          kontakKnj: _phoneController.text
-        );
+            projectId: _projectController.text,
+            namaKnj: _nameController.text,
+            tglKnj: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            lokasiknj: _namaDaerah ?? '-',
+            latlongKnj: _location,
+            pekerjaanKnj: _jobController.text,
+            kategoriKnj: _categoryController.text,
+            sumberKnj: _sourceController.text,
+            hasilKnj: _descriptionController.text,
+            imageFile: XFile(compressed.path),
+            kontakKnj: _phoneController.text);
 
         if (response.containsKey('success')) {
           setState(() {
@@ -1191,16 +1212,15 @@ class _VisitScreenState extends State<VisitScreen> {
               duration: Duration(seconds: 2),
             ),
           );
-        }
-        else if (response.containsKey('errorSession')){
+        } else if (response.containsKey('errorSession')) {
           ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session Habis')),
+            const SnackBar(content: Text('Session Habis')),
           );
-            await SessionService.clearSession();
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
+          await SessionService.clearSession();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+          );
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1216,11 +1236,26 @@ class _VisitScreenState extends State<VisitScreen> {
     }
   }
 
+  Future<File> compressImage(XFile xfile) async {
+    final bytes = await xfile.readAsBytes();
+    final originalImage = img.decodeImage(bytes);
+    if (originalImage == null) throw Exception("Gagal decode gambar");
+
+    final resized = img.copyResize(originalImage, width: 800); // resize lebar
+    final compressedBytes = img.encodeJpg(resized, quality: 70); // kompres
+
+    final dir = await getTemporaryDirectory();
+    final filePath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    return File(filePath)..writeAsBytesSync(compressedBytes);
+  }
+
   String _getDisplayText(List<DropdownItem> items, String value) {
-    return items.firstWhere(
-      (item) => item.value == value,
-      orElse: () => DropdownItem(value: '', displayText: 'Tidak diketahui'),
-    ).displayText;
+    return items
+        .firstWhere(
+          (item) => item.value == value,
+          orElse: () => DropdownItem(value: '', displayText: 'Tidak diketahui'),
+        )
+        .displayText;
   }
 }
-

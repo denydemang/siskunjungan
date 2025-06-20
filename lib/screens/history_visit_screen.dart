@@ -143,7 +143,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
     // final token = '304cbaf2-1c24-4697-bce2-e040d771d29b';
     final url = Uri.parse(
         'https://fakelocation.warungkode.com/api/kunjungan/history/$userId');
-    // final url = Uri.parse('http://192.168.158.214:8000/api/kunjungan/history/$userId');
+    // final url = Uri.parse('http://192.168.192.98:8080/api/kunjungan/history/$userId');
 
     try {
       final response = await http.get(
@@ -624,9 +624,11 @@ class Kunjungan {
   });
 
   factory Kunjungan.fromJson(Map<String, dynamic> json) {
-    final createdAt = DateTime.parse(json['created_at']);
-    final jam =
-        '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
+    // final DateTime jamParse = json['jam'];
+    // final jam =
+    //     '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
+     DateTime parsedJam = DateFormat("HH:mm:ss").parse(json['jam']);
+      String  jam = DateFormat("HH:mm").format(parsedJam);
     final DateFormat formatter =
         DateFormat('d MMMM y', 'id'); // Format: 17 Februari 2025
     final formattedDate = formatter.format(DateTime.parse(json['tgl_knj']));
