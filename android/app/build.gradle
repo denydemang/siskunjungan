@@ -45,6 +45,17 @@ android {
     kotlinOptions {
         jvmTarget = '21'
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def appName = "visitnote"
+            def versionName = variant.versionName
+            def buildType = variant.buildType.name
+            outputFileName = "${appName}-${buildType}-${versionName}.apk"
+            println("Output APK: ${outputFileName}")
+
+        }
+    }
 }
 
 flutter {

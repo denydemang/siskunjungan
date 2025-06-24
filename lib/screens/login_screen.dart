@@ -17,9 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final response = await controller.handleLogin(context);
 
-    if(!response || response){
-
-    setState(() => _isLoading = false);
+    if (!response || response) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -35,13 +34,18 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(),
-                const Text('Sales Information',
-                    style: TextStyle(fontSize: 20, color: Colors.teal)),
-                const Text('System',
-                    style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal)),
+                // const Text('Sales Information',
+                //     style: TextStyle(fontSize: 20, color: Colors.teal)),
+                // const Text('System',
+                //     style: TextStyle(
+                //         fontSize: 32,
+                //         fontWeight: FontWeight.bold,
+                //         color: Colors.teal)),
+                Image.asset(
+                  'assets/logo.png',
+                  width: 200,
+                  height: 200,
+                ),
                 const SizedBox(height: 48),
                 const Align(
                     alignment: Alignment.centerLeft,
@@ -88,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 50,
                   child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: const Color(0xFF01462B),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),

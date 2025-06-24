@@ -14,7 +14,7 @@ class LoginController {
     obscurePassword = !obscurePassword;
   }
 
- Future<bool> handleLogin(BuildContext context) async {
+  Future<bool> handleLogin(BuildContext context) async {
     final email = emailController.text.trim();
     final password = passwordController.text;
 
@@ -27,25 +27,26 @@ class LoginController {
 
     try {
       final result = await AuthService.login(email: email, password: password);
-  
+
       // Save user data and token
       await SessionService.saveSession(
-        token: result['data']['token'],
-        email: result['data']['email'],
-        divisi: result['data']['divisi'],
-        id : result['data']['id'].toString(),
-        jenisUser :  result['data']['jenis_user'],
-        name :  result['data']['name']
-      );
+          token: result['data']['token'],
+          email: result['data']['email'],
+          divisi: result['data']['divisi'],
+          id: result['data']['id'].toString(),
+          jenisUser: result['data']['jenis_user'],
+          name: result['data']['name']);
       // // Navigate to welcome screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => WelcomeScreen(name: result['data']['name'] , divisi: result['data']['divisi'], authToken:  result['data']['token']),
+          builder: (context) => WelcomeScreen(
+              name: result['data']['name'],
+              divisi: result['data']['divisi'],
+              authToken: result['data']['token']),
         ),
       );
       return true;
     } catch (e) {
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
@@ -53,4 +54,3 @@ class LoginController {
     }
   }
 }
-

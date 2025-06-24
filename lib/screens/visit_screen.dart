@@ -18,7 +18,8 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
 // Color Scheme based on the dashboard image
-const Color primaryColor = Color(0xFF009688); // Dark blue from dashboard header
+const Color primaryColor =
+    const Color(0xFF01462B); // Dark blue from dashboard header
 const Color accentColor = Color(0xFF4CAF50); // Green from the ▲ indicators
 const Color backgroundColor = Color(0xFFF5F5F5); // Light gray background
 const Color textColor = Color(0xFF333333); // Dark text color
@@ -139,7 +140,6 @@ class _VisitScreenState extends State<VisitScreen> {
       });
     }
   }
-
 
   Future<void> _initializeCamera() async {
     _cameras = await availableCameras();

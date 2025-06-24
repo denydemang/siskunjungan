@@ -14,7 +14,7 @@ class HistoryVisitScreen extends StatefulWidget {
 }
 
 class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
-  final Color _primaryColor = const Color(0xFF00897B);
+  final Color _primaryColor = const Color(0xFF01462B);
   final Color _secondaryColor = const Color(0xFF4DB6AC);
   final Color _accentColor = const Color(0xFFFFA000);
 
@@ -78,41 +78,41 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
         return;
       }
 
-     await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Tidak Bisa Membuka Lokasi !',
-                style: TextStyle(color: Colors.amber)),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.pop(context);
-                },
-                child: const Text('OK', style: TextStyle(color: Colors.blue)),
-              ),
-            ],
-          ),
-        );
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Tidak Bisa Membuka Lokasi !',
+              style: TextStyle(color: Colors.amber)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pop(context);
+              },
+              child: const Text('OK', style: TextStyle(color: Colors.blue)),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
-       await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Gagal Membuka Lokasi !',
-                style: TextStyle(color: Colors.amber)),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.pop(context);
-                },
-                child: const Text('OK', style: TextStyle(color: Colors.blue)),
-              ),
-            ],
-          ),
-        );
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Gagal Membuka Lokasi !',
+              style: TextStyle(color: Colors.amber)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pop(context);
+              },
+              child: const Text('OK', style: TextStyle(color: Colors.blue)),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -627,8 +627,8 @@ class Kunjungan {
     // final DateTime jamParse = json['jam'];
     // final jam =
     //     '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
-     DateTime parsedJam = DateFormat("HH:mm:ss").parse(json['jam']);
-      String  jam = DateFormat("HH:mm").format(parsedJam);
+    DateTime parsedJam = DateFormat("HH:mm:ss").parse(json['jam']);
+    String jam = DateFormat("HH:mm").format(parsedJam);
     final DateFormat formatter =
         DateFormat('d MMMM y', 'id'); // Format: 17 Februari 2025
     final formattedDate = formatter.format(DateTime.parse(json['tgl_knj']));
