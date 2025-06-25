@@ -72,9 +72,11 @@ class _VisitScreenState extends State<VisitScreen> {
   List<DropdownItem> _projectOptions = [];
 
   final List<DropdownItem> _categoryOptions = [
-    DropdownItem(value: 'Reguler', displayText: 'Reguler'),
-    DropdownItem(value: 'VIP', displayText: 'VIP'),
-    DropdownItem(value: 'VVIP', displayText: 'VVIP'),
+    DropdownItem(value: 'Belum Dapat', displayText: 'Belum Dapat'),
+    DropdownItem(value: 'Database', displayText: 'Database'),
+    DropdownItem(value: 'Potensi', displayText: 'Potensi'),
+    DropdownItem(value: 'Hot Prospek', displayText: 'Hot Prospek'),
+    DropdownItem(value: 'Booking', displayText: 'Booking'),
   ];
 
   final List<DropdownItem> _sourceOptions = [
