@@ -167,12 +167,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         children: [
           _homeContent(),
           const HistoryVisitScreen(),
-          const VisitScreen(),
+          (widget.jabatan != 'PMR')
+              ? const VisitScreen()
+              : const SizedBox(),
           ProfileScreen(
-              name: widget.name,
-              email: widget.email,
-              jabatan: widget.jabatan,
-              divisi: widget.divisi,
+            name: widget.name,
+            email: widget.email,
+            jabatan: widget.jabatan,
+            divisi: widget.divisi,
           ),
           Container(), // Logout dummy
         ],
@@ -184,10 +186,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         color: Colors.grey[300],
         initialActiveIndex: _currentIndex,
         onTap: _handleBottomTap,
-        items: const [
+        items: [
           TabItem(icon: Icons.home, title: 'Home'),
           TabItem(icon: Icons.history, title: 'History'),
-          TabItem(icon: Icons.place, title: 'Visit'),
+          if (widget.jabatan != 'PMR') const TabItem(icon: Icons.place, title: 'Visit'),
           TabItem(icon: Icons.person, title: 'Profile'),
           TabItem(icon: Icons.logout, title: 'Logout'),
         ],
@@ -196,7 +198,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _handleBottomTap(int index) {
-    if (index == 4) {
+    int decrease = 0;
+    if (!(widget.jabatan != 'PMR')) {
+      decrease = 1;
+    }
+    print(4-decrease);
+    if (index == (4 - decrease) ) {
       widget._dashboardController.showLogoutConfirmation(context);
     } else {
       setState(() => _currentIndex = index);
