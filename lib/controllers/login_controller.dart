@@ -35,13 +35,17 @@ class LoginController {
           divisi: result['data']['divisi'],
           id: result['data']['id'].toString(),
           jenisUser: result['data']['jenis_user'],
+          jabatan: result['data']['jabatan'],
           name: result['data']['name']);
+
       // // Navigate to welcome screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => WelcomeScreen(
               name: result['data']['name'],
+              jabatan:  result['data']['jabatan'],
               divisi: result['data']['divisi'],
+              email : result['data']['email'],
               authToken: result['data']['token']),
         ),
       );

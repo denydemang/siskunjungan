@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:sisflutterproject/screens/history_visit_screen.dart';
 import 'package:sisflutterproject/screens/login_screen.dart';
+import 'package:sisflutterproject/screens/profiles_screen.dart';
 import 'package:sisflutterproject/screens/visit_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 import '../controllers/dashboard_controller.dart';
@@ -14,6 +15,8 @@ import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 class WelcomeScreen extends StatefulWidget {
   final String name;
   final String divisi;
+  final String jabatan;
+  final String email;
   final String authToken;
   final DashboardController _dashboardController = DashboardController();
 
@@ -21,6 +24,8 @@ class WelcomeScreen extends StatefulWidget {
     super.key,
     required this.name,
     required this.divisi,
+    required this.jabatan,
+    required this.email,
     required this.authToken,
   });
 
@@ -163,6 +168,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           _homeContent(),
           const HistoryVisitScreen(),
           const VisitScreen(),
+          ProfileScreen(
+              name: widget.name,
+              email: widget.email,
+              jabatan: widget.jabatan,
+              divisi: widget.divisi,
+          ),
           Container(), // Logout dummy
         ],
       ),
@@ -177,6 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           TabItem(icon: Icons.home, title: 'Home'),
           TabItem(icon: Icons.history, title: 'History'),
           TabItem(icon: Icons.place, title: 'Visit'),
+          TabItem(icon: Icons.person, title: 'Profile'),
           TabItem(icon: Icons.logout, title: 'Logout'),
         ],
       ),
@@ -184,7 +196,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _handleBottomTap(int index) {
-    if (index == 3) {
+    if (index == 4) {
       widget._dashboardController.showLogoutConfirmation(context);
     } else {
       setState(() => _currentIndex = index);

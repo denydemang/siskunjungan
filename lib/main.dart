@@ -27,12 +27,16 @@ class SalesInformationSystemApp extends StatelessWidget {
   final String initialRoute;
   final String? name;
   final String? divisi;
+  final String? jabatan;
+  final String? email;
   final String? authToken;
   const SalesInformationSystemApp({
     super.key,
     required this.initialRoute,
     this.name,
     this.divisi,
+    this.jabatan,
+    this.email,
     this.authToken
   });
 
@@ -44,7 +48,7 @@ class SalesInformationSystemApp extends StatelessWidget {
       initialRoute: initialRoute,
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/welcome': (context) => WelcomeScreen(name: name ?? 'User' , divisi : divisi ?? '' ,authToken:  authToken ?? '', ),
+        '/welcome': (context) => WelcomeScreen(name: name ?? 'User' , divisi : divisi ?? '' ,authToken:  authToken ?? '',jabatan: jabatan ?? '', email: email ?? ''),
       },
     );
   }

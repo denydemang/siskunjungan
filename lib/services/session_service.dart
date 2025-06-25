@@ -11,6 +11,7 @@ class SessionService {
   static const String _jenisUserKey = 'user_jenis';
   static const String _divisiKey = 'user_divisi';
   static const String _nameKey = 'user_name';
+  static const String _jabatanKey = 'jabatan';
 
   static Future<void> 
   saveSession({
@@ -20,6 +21,7 @@ class SessionService {
     required String jenisUser,
     required String id,
     required String divisi,
+    required String jabatan,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -30,6 +32,7 @@ class SessionService {
         prefs.setString(_jenisUserKey, jenisUser),
         prefs.setString(_divisiKey, divisi),
         prefs.setString(_idKey, id),
+        prefs.setString(_jabatanKey, jabatan),
       ]);
     } catch (e) {
       throw Exception('Failed to save session: $e');
@@ -74,6 +77,13 @@ class SessionService {
     return prefs.getString(_divisiKey);
   }
 
+   static Future<String?> getJabatan() async {
+    // SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_jabatanKey);
+  }
+
+
   static Future<void> clearSession() async {
     try {
       // SharedPreferences.setMockInitialValues({});
@@ -81,6 +91,7 @@ class SessionService {
       await Future.wait([
         prefs.remove(_tokenKey),
         prefs.remove(_jenisUserKey),
+        prefs.remove(_jabatanKey),
         prefs.remove(_divisiKey),
         prefs.remove(_nameKey),
         prefs.remove(_emailKey),
