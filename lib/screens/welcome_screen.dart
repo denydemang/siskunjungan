@@ -144,17 +144,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        title: Text('Dashboard',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: _currentIndex == 0
+          ? AppBar(
+              elevation: 0,
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              title: Text('Dashboard',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              centerTitle: true,
+            )
+          : null, // AppBar hanya muncul saat Home (index 0)
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -165,7 +168,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ],
       ),
       bottomNavigationBar: ConvexAppBar(
-        style: TabStyle.reactCircle, // atau `fixedCircle`, `react`, dll
+        style: TabStyle.reactCircle,
         backgroundColor: _primaryColor,
         activeColor: Colors.white,
         color: Colors.grey[300],
@@ -269,21 +272,64 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     int position = 0,
     VoidCallback? onTap,
   }) {
+    final isTopThree = position >= 1 && position <= 3;
+
+    final gradientColors = position == 1
+        ? [Color(0xFFFFD700), Color(0xFFFFC107)] // Gold
+        : position == 2
+            ? [Colors.grey.shade400, Colors.grey.shade200] // Silver
+            : position == 3
+                ? [Colors.brown.shade300, Colors.brown.shade100] // Bronze
+                : [const Color(0xFF1C1C2E), const Color(0xFF1C1C2E)];
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C2E), // dark card background
+        gradient: LinearGradient(colors: gradientColors),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          if (isTopThree)
+            const BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+        ],
       ),
       child: Row(
         children: [
-          // Avatar atau ikon peringkat
-          leading,
+          // Ranking avatar + mahkota
+          Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.white,
+                child: Text(
+                  '$position',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              if (position == 1)
+                const Positioned(
+                  top: -10,
+                  child: Icon(
+                    FontAwesomeIcons.crown,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
+                ),
+            ],
+          ),
 
           const SizedBox(width: 16),
 
-          // Title dan Subtitle (nama & divisi)
+          // Nama dan divisi
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,36 +337,55 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: GoogleFonts.poppins(
-                    color: Colors.grey[400],
                     fontSize: 12,
+                    color: Colors.grey.shade800,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Trailing dan Extra
+          // Jumlah kunjungan & trailing
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (extra != null)
-                Text(
-                  extra!,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on,
+                          color: Colors.redAccent, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        extra!,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              if (trailing != null) trailing!,
+              if (trailing != null) ...[
+                const SizedBox(height: 6),
+                trailing!,
+              ],
             ],
           ),
         ],
