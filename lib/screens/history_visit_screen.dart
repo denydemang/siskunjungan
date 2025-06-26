@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:sisflutterproject/screens/login_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async'; // Untuk Timer
 
 class HistoryVisitScreen extends StatefulWidget {
   const HistoryVisitScreen({Key? key}) : super(key: key);
@@ -18,7 +19,9 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   final Color _secondaryColor = const Color(0xFF4DB6AC);
   final Color _accentColor = const Color(0xFFFFA000);
   String jabatan = '';
-
+  final TextEditingController _searchController = TextEditingController();
+  String _searchKeyword = '';
+  Timer? _searchDebounce;
   List<Kunjungan> kunjunganList = [];
   bool isLoading = true;
   bool isFetchingMore = false;
@@ -36,6 +39,8 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _searchDebounce?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -54,7 +59,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   Future<void> fetchKunjunganData() async {
     setState(() {
       isLoading = true;
-      currentPage = 1;
+      currentPage = 1; // Always reset to page 1 when fetching new data
       hasMoreData = true;
     });
 
@@ -69,7 +74,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
         }
       });
     } catch (e) {
-       Navigator.of(context).pushAndRemoveUntil(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
         (Route<dynamic> route) => false,
       );
@@ -138,14 +143,14 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
         if (idUser != null) 'iduser': idUser,
         'page': page.toString(),
         'perPage': perPage.toString(),
+        if (_searchKeyword.isNotEmpty) 'keyword': _searchKeyword,
       },
     );
-    print({'url': url});
+    print(url);
     final response = await http.get(
       url,
       headers: {'Authorization': token ?? ''},
     );
-
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
       final dataList = jsonData['data'] as List;
@@ -161,6 +166,21 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
       throw Exception(
           'Failed to load data with status: ${response.statusCode}');
     }
+  }
+
+  void _onSearchChanged() {
+    
+    if (_searchDebounce?.isActive ?? false) _searchDebounce?.cancel();
+  
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (_searchKeyword != _searchController.text) {
+
+        setState(() {
+          _searchKeyword = _searchController.text;
+        });
+        fetchKunjunganData();
+      }
+    });
   }
 
   void _showErrorSnackBar(String message) {
@@ -540,278 +560,358 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
               colors: [_primaryColor.withOpacity(0.05), Colors.white],
             ),
           ),
-          child: kunjunganList.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.8,
-                      child: const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Text(
-                            "Data Kunjungan Tidak Ditemukan",
-                            style:
-                                TextStyle(fontSize: 18, color: Colors.black54),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (scrollNotification) {
-                            if (scrollNotification is ScrollEndNotification &&
-                                _scrollController.position.pixels ==
-                                    _scrollController
-                                        .position.maxScrollExtent &&
-                                !isFetchingMore &&
-                                hasMoreData) {
-                              fetchMoreKunjunganData();
-                            }
-                            return false;
-                          },
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount:
-                                kunjunganList.length + (hasMoreData ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == kunjunganList.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
-                                  child: Center(
-                                    child: hasMoreData
-                                        ? const CircularProgressIndicator(
-                                            color: Colors.teal)
-                                        : const Text(
-                                            "Tidak ada data lagi",
-                                            style:
-                                                TextStyle(color: Colors.grey),
-                                          ),
-                                  ),
-                                );
-                              }
-
-                              final kunjungan = kunjunganList[index];
-                              return Card(
-                                elevation: 4,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          // Left side (date/time info) - unchanged
-                                          Row(
-                                            children: [
-                                              CircleAvatar(
-                                                radius: 20,
-                                                backgroundColor:
-                                                    _secondaryColor,
-                                                child: const Icon(
-                                                    Icons.calendar_today,
-                                                    size: 16,
-                                                    color: Colors.white),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    kunjungan.tglKnj,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Jam: ${kunjungan.jamDariCreatedAt}',
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          // Right side (action buttons)
-                                          Row(
-                                            children: [
-                                              jabatan != 'ADM' ? Container() :
-                                              // Delete Button - improved version
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.red[
-                                                      50], // Light red background
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                  border: Border.all(
-                                                      color: Colors.red[100]!),
-                                                ),
-                                                child: IconButton(
-                                                  onPressed: () =>
-                                                      _showDeleteConfirmation(
-                                                          kunjungan.idKnj , kunjungan.namaKnj),
-                                                  icon: Icon(
-                                                      Icons.delete_outline,
-                                                      color: Colors.red[400]),
-                                                  tooltip: 'Hapus Kunjungan',
-                                                  padding:
-                                                      const EdgeInsets.all(8),
-                                                  constraints:
-                                                      const BoxConstraints(),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              // Existing Detail Button
-                                              ElevatedButton.icon(
-                                                onPressed: () =>
-                                                    showDetailDialog(
-                                                        context, kunjungan),
-                                                icon: const Icon(
-                                                  Icons.remove_red_eye_outlined,
-                                                  size: 16,
-                                                  color: Colors.white,
-                                                ),
-                                                label: const Text('Detail',
-                                                    style: TextStyle(
-                                                        fontSize: 15,
-                                                        color: Colors.white)),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: _accentColor,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                       Row(
-                                        children: [
-                                          const Icon(Icons.abc,
-                                              size: 16, color: Colors.grey),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              '${kunjungan.namaKnj}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style:
-                                                  const TextStyle(fontSize: 14),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.location_on,
-                                              size: 16, color: Colors.grey),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'Lokasi: ${kunjungan.lokasiKnj}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style:
-                                                  const TextStyle(fontSize: 14),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.pin_drop,
-                                              size: 16, color: Colors.grey),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'LatLong: ${kunjungan.latlongKnj}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style:
-                                                  const TextStyle(fontSize: 14),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+          child: Column(
+            children: [
+              // Tambahkan Search Bar di sini (Satu-satunya perubahan)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => _onSearchChanged(),
+                    decoration: InputDecoration(
+                      hintText: 'Cari kata kunci...',
+                      prefixIcon: Icon(Icons.search, color: _primaryColor),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear, color: _primaryColor),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                    ),
+                  ),
                 ),
+              ),
+
+              // Bagian ini tetap sama persis seperti kode asli Anda
+              Expanded(
+                child: kunjunganList.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.8,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Text(
+                                  _searchKeyword.isEmpty
+                                      ? "Data Kunjungan Tidak Ditemukan"
+                                      : "Tidak ditemukan hasil untuk '$_searchKeyword'",
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.black54),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            Expanded(
+                              child: NotificationListener<ScrollNotification>(
+                                onNotification: (scrollNotification) {
+                                  if (scrollNotification
+                                          is ScrollEndNotification &&
+                                      _scrollController.position.pixels ==
+                                          _scrollController
+                                              .position.maxScrollExtent &&
+                                      !isFetchingMore &&
+                                      hasMoreData) {
+                                    fetchMoreKunjunganData();
+                                  }
+                                  return false;
+                                },
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  itemCount: kunjunganList.length +
+                                      (hasMoreData ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == kunjunganList.length) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16.0),
+                                        child: Center(
+                                          child: hasMoreData
+                                              ? const CircularProgressIndicator(
+                                                  color: Colors.teal)
+                                              : const Text(
+                                                  "Tidak ada data lagi",
+                                                  style: TextStyle(
+                                                      color: Colors.grey),
+                                                ),
+                                        ),
+                                      );
+                                    }
+
+                                    final kunjungan = kunjunganList[index];
+                                    return Card(
+                                      elevation: 4,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      radius: 20,
+                                                      backgroundColor:
+                                                          _secondaryColor,
+                                                      child: const Icon(
+                                                          Icons.calendar_today,
+                                                          size: 16,
+                                                          color: Colors.white),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          kunjungan.tglKnj,
+                                                          style:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 16,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 4),
+                                                        Text(
+                                                          'Jam: ${kunjungan.jamDariCreatedAt}',
+                                                          style:
+                                                              const TextStyle(
+                                                            fontSize: 13,
+                                                            color:
+                                                                Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    jabatan != 'ADM'
+                                                        ? Container()
+                                                        : Container(
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors
+                                                                  .red[50],
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          20),
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                          .red[
+                                                                      100]!),
+                                                            ),
+                                                            child: IconButton(
+                                                              onPressed: () =>
+                                                                  _showDeleteConfirmation(
+                                                                      kunjungan
+                                                                          .idKnj,
+                                                                      kunjungan
+                                                                          .namaKnj),
+                                                              icon: Icon(
+                                                                  Icons
+                                                                      .delete_outline,
+                                                                  color: Colors
+                                                                          .red[
+                                                                      400]),
+                                                              tooltip:
+                                                                  'Hapus Kunjungan',
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(8),
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                            ),
+                                                          ),
+                                                    const SizedBox(width: 8),
+                                                    ElevatedButton.icon(
+                                                      onPressed: () =>
+                                                          showDetailDialog(
+                                                              context,
+                                                              kunjungan),
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .remove_red_eye_outlined,
+                                                        size: 16,
+                                                        color: Colors.white,
+                                                      ),
+                                                      label: const Text(
+                                                          'Detail',
+                                                          style: TextStyle(
+                                                              fontSize: 15,
+                                                              color: Colors
+                                                                  .white)),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            _accentColor,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
+                                                        ),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.abc,
+                                                    size: 16,
+                                                    color: Colors.grey),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    '${kunjungan.namaKnj}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        fontSize: 14),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.location_on,
+                                                    size: 16,
+                                                    color: Colors.grey),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'Lokasi: ${kunjungan.lokasiKnj}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        fontSize: 14),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.pin_drop,
+                                                    size: 16,
+                                                    color: Colors.grey),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'LatLong: ${kunjungan.latlongKnj}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        fontSize: 14),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showDeleteConfirmation(int id , String namaKnj) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Hapus Kunjungan Ini?'),
-      content: Text('Data kunjungan ' + namaKnj +' akan dihapus permanen. Anda yakin?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
+  void _showDeleteConfirmation(int id, String namaKnj) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Kunjungan Ini?'),
+        content: Text('Data kunjungan ' +
+            namaKnj +
+            ' akan dihapus permanen. Anda yakin?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteKunjungan(id);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _deleteKunjungan(id);
-          },
-          child: const Text('Hapus',
-            style: TextStyle(color: Colors.red)),
-        ),
-      ],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class Kunjungan {
