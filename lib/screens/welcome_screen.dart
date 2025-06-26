@@ -40,6 +40,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final Color _accentColor = const Color(0xFFFFC107);
   final Color _cardColor = Colors.white;
   final Color _bgColor = const Color(0xFFF1F3F6);
+  String? jabatan;
 
   List<dynamic> leaderboardData = [];
   List<dynamic> dailyweeklyData = [];
@@ -49,6 +50,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+    
     _fetchLeaderboardData();
     _fetchWeeklyMonthlyData();
   }
@@ -59,7 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         isLoading = true;
         errorMessage = '';
       });
-
+      
       final response = await http.get(
         Uri.parse('https://fakelocation.warungkode.com/api/kunjungan/top'),
         headers: {
@@ -84,6 +86,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             MaterialPageRoute(builder: (context) => LoginScreen()));
       }
     } catch (e) {
+      await SessionService.clearSession();
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => LoginScreen()));
       setState(() {
         isLoading = false;
         errorMessage = 'Gagal memuat data leaderboard: $e';
@@ -96,12 +101,35 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       setState(() {
         isLoading = true;
         errorMessage = '';
+        
       });
+      jabatan = await SessionService.getJabatan();
+      String? userId = await SessionService.getID();
+      
+      var user_pmr = null;
+      var user_mgm = null;
+      var idUser = null;
 
-      String? idUser = await SessionService.getID();
+      switch (jabatan) {
+        case 'PMR':
+          user_pmr = userId;
+          break;
+        case 'MGM':
+          user_mgm = userId;
+          break;
+        default:
+          idUser = userId;
+      }
       final response = await http.get(
-        Uri.parse(
-            'https://fakelocation.warungkode.com/api/kunjungan/group/$idUser'),
+        Uri.https(
+        'fakelocation.warungkode.com',
+        '/api/kunjungan/group',
+        {
+          if (user_pmr != null) 'user_pmr': user_pmr,
+          if (user_mgm != null) 'user_mgm': user_mgm,
+          if (idUser != null) 'user_id': idUser,
+        }
+        ),
         headers: {
           'Authorization': widget.authToken,
           'Accept': 'application/json'
@@ -120,6 +148,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             MaterialPageRoute(builder: (context) => LoginScreen()));
       }
     } catch (e) {
+      await SessionService.clearSession();
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => LoginScreen()));
       setState(() {
         isLoading = false;
         errorMessage = 'Gagal memuat data: $e';
@@ -167,9 +198,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         children: [
           _homeContent(),
           const HistoryVisitScreen(),
-          (widget.jabatan != 'PMR')
-              ? const VisitScreen()
-              : const SizedBox(),
+          if (widget.jabatan != 'PMR') const VisitScreen(),
           ProfileScreen(
             name: widget.name,
             email: widget.email,
@@ -189,7 +218,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         items: [
           TabItem(icon: Icons.home, title: 'Home'),
           TabItem(icon: Icons.history, title: 'History'),
-          if (widget.jabatan != 'PMR') const TabItem(icon: Icons.place, title: 'Visit'),
+          if (widget.jabatan != 'PMR')
+            TabItem(icon: Icons.place, title: 'Visit'),
           TabItem(icon: Icons.person, title: 'Profile'),
           TabItem(icon: Icons.logout, title: 'Logout'),
         ],
@@ -202,8 +232,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (!(widget.jabatan != 'PMR')) {
       decrease = 1;
     }
-    print(4-decrease);
-    if (index == (4 - decrease) ) {
+    if (index == (4 - decrease)) {
       widget._dashboardController.showLogoutConfirmation(context);
     } else {
       setState(() => _currentIndex = index);
@@ -243,7 +272,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   );
                 }),
                 const SizedBox(height: 20),
-                _sectionHeader(Icons.place, 'Kunjungan Saya'),
+                jabatan == 'MGM' || jabatan == 'PMR'  ? _sectionHeader(Icons.place, 'Kunjungan Proyek Saya') : _sectionHeader(Icons.place, 'Kunjungan Saya'),
                 const SizedBox(height: 12),
                 _visitCard(
                   name: widget.name,
