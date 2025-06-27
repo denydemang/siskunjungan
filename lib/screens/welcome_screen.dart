@@ -50,7 +50,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _fetchLeaderboardData();
     _fetchWeeklyMonthlyData();
   }
@@ -61,7 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         isLoading = true;
         errorMessage = '';
       });
-      
+
       final response = await http.get(
         Uri.parse('https://fakelocation.warungkode.com/api/kunjungan/top'),
         headers: {
@@ -101,11 +101,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       setState(() {
         isLoading = true;
         errorMessage = '';
-        
       });
       jabatan = await SessionService.getJabatan();
       String? userId = await SessionService.getID();
-      
+
       var user_pmr = null;
       var user_mgm = null;
       var idUser = null;
@@ -121,15 +120,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           idUser = userId;
       }
       final response = await http.get(
-        Uri.https(
-        'fakelocation.warungkode.com',
-        '/api/kunjungan/group',
-        {
+        Uri.https('fakelocation.warungkode.com', '/api/kunjungan/group', {
           if (user_pmr != null) 'user_pmr': user_pmr,
           if (user_mgm != null) 'user_mgm': user_mgm,
           if (idUser != null) 'user_id': idUser,
-        }
-        ),
+        }),
         headers: {
           'Authorization': widget.authToken,
           'Accept': 'application/json'
@@ -239,6 +234,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
+  // (kode yang sama seperti sebelumnya sampai _homeContent)
+
   Widget _homeContent() {
     return isLoading
         ? const Center(child: CircularProgressIndicator())
@@ -253,26 +250,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 _sectionHeader(
                     Icons.leaderboard, 'Leaderboard $currentMonthYear'),
                 const SizedBox(height: 12),
-                ...leaderboardData.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final data = entry.value;
-                  return _card(
-                    title: data['name'],
-                    subtitle: data['divisi'],
-                    trailing: idx == 0
-                        ? Icon(FontAwesomeIcons.crown, color: _accentColor)
-                        : null,
-                    leading: CircleAvatar(
-                      backgroundColor: _getRankColor(idx + 1),
-                      child: Text('${idx + 1}',
-                          style: const TextStyle(color: Colors.white)),
-                    ),
-                    extra: '${data['jmlh']} Kunjungan',
-                    position: idx + 1,
-                  );
-                }),
+                _buildPodium(leaderboardData),
                 const SizedBox(height: 20),
-                jabatan == 'MGM' || jabatan == 'PMR'  ? _sectionHeader(Icons.place, 'Kunjungan Proyek Saya') : _sectionHeader(Icons.place, 'Kunjungan Saya'),
+                jabatan == 'MGM' || jabatan == 'PMR'
+                    ? _sectionHeader(Icons.place, 'Kunjungan Proyek Saya')
+                    : _sectionHeader(Icons.place, 'Kunjungan Saya'),
                 const SizedBox(height: 12),
                 _visitCard(
                   name: widget.name,
@@ -286,12 +268,208 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         },
                 ),
                 const SizedBox(height: 24),
-                _sectionHeader(Icons.newspaper, 'Berita Terbaru'),
-                const SizedBox(height: 12),
-                _newsSlider(),
+                // _sectionHeader(Icons.newspaper, 'Berita Terbaru'),
+                // const SizedBox(height: 12),
+                // _newsSlider(),
               ],
             ),
           );
+  }
+
+  Widget _buildPodium(List data) {
+    if (data.isEmpty) return const Text('Belum ada data leaderboard.');
+
+    Widget _userBox(int index, double height, Color color,
+        {bool isCenter = false}) {
+      final user = data.length > index ? data[index] : null;
+      final rank = index + 1;
+
+      return Expanded(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (rank == 1)
+              Icon(
+                FontAwesomeIcons.crown,
+                color: Colors.amber.shade700,
+                size: 36,
+                shadows: [
+                  Shadow(color: Colors.amber.withOpacity(0.5), blurRadius: 10),
+                ],
+              ),
+            Padding(
+              padding: EdgeInsets.only(top: rank == 1 ? 8 : 12),
+              child: CircleAvatar(
+                radius: isCenter ? 28 : 24,
+                backgroundColor: Colors.grey.shade200,
+                child: Icon(
+                  Icons.person,
+                  size: isCenter ? 26 : 22,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              user != null ? user['name'] : '-',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            Text(
+              user != null ? user['divisi'] : '',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: height,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: rank == 1
+                      ? [Color(0xFFFFD740), Color(0xFFFFD740)]
+                      : rank == 2
+                          ? [Colors.grey.shade400, Colors.grey.shade400]
+                          : [Colors.brown.shade400, Colors.brown.shade400],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  if (rank == 1)
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.5),
+                      blurRadius: 16,
+                      spreadRadius: 3,
+                      offset: Offset(0, 0),
+                    ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.directions_walk,
+                      color: Colors.white, size: isCenter ? 20 : 16),
+                  const SizedBox(height: 2),
+                  Text(
+                    user != null ? '${user['jmlh']}' : '0',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.only(top: 32, bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Label Top 3
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(FontAwesomeIcons.crown,
+                        color: Colors.amber.shade800, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Top 3 Rank',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.amber.shade900,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 4,
+                            offset: Offset(1, 1),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _userBox(1, 76, Colors.grey.shade400),
+              _userBox(0, 100, Colors.amber.shade600, isCenter: true),
+              _userBox(2, 50, Colors.brown.shade400),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Divider(color: Colors.teal.shade100, thickness: 1),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              '🔥 Ayo kejar posisi! Jadilah bagian dari 3 besar leaderboard bulan ini dan buktikan performa terbaikmu!',
+              style: GoogleFonts.poppins(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                color: Colors.teal.shade800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _sectionHeader(IconData icon, String title) => Row(
@@ -323,117 +501,143 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     int position = 0,
     VoidCallback? onTap,
   }) {
-    final isTop1 = position == 1;
-    final isTop3 = position <= 3;
+    final bool isTop1 = position == 1;
+    final bool isTop2 = position == 2;
+    final bool isTop3 = position == 3;
 
-    final gradientColors = isTop1
-        ? [Color.fromARGB(255, 235, 234, 229), Color(0xFFFFC107)]
-        : isTop3
-            ? [const Color.fromARGB(255, 255, 243, 243), Colors.grey.shade100]
-            : [Color(0xFF1C1C2E), Color(0xFF1C1C2E)];
+    final List<Color> gradientColors = isTop1
+        ? [Colors.white, const Color(0xFFFFF59D)]
+        : isTop2
+            ? [Colors.white, Colors.grey.shade300]
+            : isTop3
+                ? [Colors.white, Colors.brown.shade100]
+                : [Colors.white, Colors.white];
 
-    final textColor = isTop3 ? Colors.black87 : Colors.white;
-    final subTextColor = isTop3 ? Colors.black54 : Colors.grey[300];
+    final Color textColor = Colors.black87;
+    final Color subTextColor = Colors.grey.shade600;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          if (isTop3)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.white,
-              ),
-              if (position == 1 || position == 2 || position == 3)
-                Icon(
-                  FontAwesomeIcons.crown,
-                  color: position == 1
-                      ? Colors.amber
-                      : position == 2
-                          ? Colors.grey.shade400
-                          : Colors.brown.shade400,
-                  size: position == 1 ? 30 : 24,
-                ),
-            ],
+    final Color crownBgColor = isTop1
+        ? Colors.amber
+        : isTop2
+            ? Colors.grey
+            : isTop3
+                ? Colors.brown
+                : Colors.transparent;
+
+    final Color extraColor = isTop1
+        ? Colors.amber.shade800
+        : isTop2
+            ? Colors.grey.shade700
+            : isTop3
+                ? Colors.brown.shade700
+                : Colors.grey.shade600;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar + Crown
+            Stack(
+              alignment: Alignment.topRight,
+              clipBehavior: Clip.none,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.grey[100],
+                  child: leading,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: subTextColor,
+                if (position <= 3)
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: crownBgColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: crownBgColor.withOpacity(0.5),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      child: const Icon(
+                        FontAwesomeIcons.crown,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
-          ),
-          if (extra != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: position == 1
-                    ? const Color.fromARGB(255, 255, 237, 179)
-                    : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+            const SizedBox(width: 16),
+            // Title + Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.directions_walk,
-                    size: 16,
-                    color: position == 1
-                        ? const Color.fromARGB(255, 245, 7, 7)
-                        : Colors.grey[700],
-                  ),
-                  const SizedBox(width: 6),
                   Text(
-                    extra!,
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: position == 1
-                          ? const Color.fromARGB(255, 255, 3, 3)
-                          : Colors.black87,
+                      fontWeight: FontWeight.w400,
+                      color: subTextColor,
                     ),
                   ),
                 ],
               ),
             ),
-        ],
+            // Jumlah kunjungan
+            if (extra != null) ...[
+              const SizedBox(width: 12),
+              Row(
+                children: [
+                  Icon(Icons.directions_walk_rounded,
+                      size: 18, color: extraColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    extra!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: extraColor,
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -444,38 +648,77 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     required Map<String, dynamic> data,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          colors: [Color(0xFFE0F2F1), Color(0xFFFFFFFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.zero,
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.teal.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _statItem(
-            "Harian",
-            data['daily_visits'].toString(),
-            Icons.calendar_today,
-            color: Colors.blue.shade700,
+          // Text(
+          //   'Halo, $name 👋',
+          //   style: GoogleFonts.poppins(
+          //     fontSize: 16,
+          //     fontWeight: FontWeight.bold,
+          //     color: const Color(0xFF004D40),
+          //   ),
+          // ),
+          // Text(
+          //   'Divisi: $divisi',
+          //   style: GoogleFonts.poppins(
+          //     fontSize: 13,
+          //     color: Colors.grey[700],
+          //   ),
+          // ),
+          const SizedBox(height: 12),
+          Text(
+            "📊 Berikut ringkasan kunjungan kamu:",
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.teal.shade800,
+            ),
           ),
-          _statItem(
-            "Mingguan",
-            data['weekly_visits'].toString(),
-            Icons.calendar_view_week,
-            color: Colors.green.shade700,
-          ),
-          _statItem(
-            "Bulan Ini",
-            data['monthly_visits'].toString(),
-            Icons.calendar_month,
-            color: Colors.orange.shade700,
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _statItem(
+                "Harian",
+                data['daily_visits'].toString(),
+                Icons.calendar_today_rounded,
+                color: Colors.blueAccent,
+                badgeText: "👍 Bagus!",
+              ),
+              _statItem(
+                "Mingguan",
+                data['weekly_visits'].toString(),
+                Icons.calendar_view_week_rounded,
+                color: Colors.teal,
+                badgeText: "⬆️ Naik!",
+              ),
+              _statItem(
+                "Bulan Ini",
+                data['monthly_visits'].toString(),
+                Icons.calendar_month_rounded,
+                color: Colors.deepOrangeAccent,
+                badgeText: "🔥 Produktif",
+              ),
+            ],
           ),
         ],
       ),
@@ -483,38 +726,69 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Widget _statItem(String label, String count, IconData icon,
-      {required Color color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      width: 90,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 28, color: color),
-          const SizedBox(height: 6),
-          Text(
-            count,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: color,
+      {required Color color, String? badgeText}) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.topRight,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
+                  center: Alignment.center,
+                  radius: 0.9,
+                ),
+              ),
+              child: Center(
+                child: Icon(icon, size: 26, color: color),
+              ),
             ),
+            if (badgeText != null)
+              Positioned(
+                top: -2,
+                right: -2,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          count,
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-            ),
-            textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -552,7 +826,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(0),
               image: DecorationImage(
                 image: NetworkImage(item['image']!),
                 fit: BoxFit.cover,
