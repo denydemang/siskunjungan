@@ -48,7 +48,7 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            def appName = "Visit Note Buana Kassiti"
+            def appName = "visitnote"
             def versionName = variant.versionName
             def buildType = variant.buildType.name
             outputFileName = "${appName}-${buildType}-${versionName}.apk"
