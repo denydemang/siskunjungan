@@ -100,14 +100,14 @@ class VisitService {
   }
 
   // visit_service.dart
-static Future<List<DropdownItem>> fetchProjects() async {
+static Future<List<DropdownItem>> fetchProjects(String isPMR ) async {
   try {
     final token = await SessionService.getToken();
     // final token = '304cbaf2-1c24-4697-bce2-e040d771d29b';
     if (token == null) throw Exception('Token tidak tersedia');
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/project'), // Sesuaikan dengan endpoint API Anda
+      Uri.parse('$_baseUrl/project?ispmr='+isPMR), // Sesuaikan dengan endpoint API Anda
       headers: {
         'Authorization': token,
         'Accept': 'application/json',

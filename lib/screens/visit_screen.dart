@@ -92,7 +92,10 @@ class _VisitScreenState extends State<VisitScreen> {
       _projectError = null;
     });
     try {
-      final projects = await VisitService.fetchProjects();
+      final jabatan = await SessionService.getJabatan();
+      final idUser = await SessionService.getID();
+      String isPMR = (jabatan == 'PMR' || jabatan == 'MGM') && idUser == '3' ? 'true' : 'false';
+      final projects = await VisitService.fetchProjects(isPMR);
       setState(() {
         _projectOptions = projects;
       });
