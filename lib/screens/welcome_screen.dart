@@ -63,7 +63,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       });
 
       final response = await http.get(
-        Uri.parse('https://fakelocation.warungkode.com/api/kunjungan/top'),
+        Uri.parse('https://apivn.internalbkg.com/api/kunjungan/top'),
         headers: {
           'Authorization': widget.authToken,
           'Accept': 'application/json'
@@ -120,7 +120,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           idUser = userId;
       }
       final response = await http.get(
-        Uri.https('fakelocation.warungkode.com', '/api/kunjungan/group', {
+        Uri.https('apivn.internalbkg.com', '/api/kunjungan/group', {
           if (user_pmr != null) 'user_pmr': user_pmr,
           if (user_mgm != null) 'user_mgm': user_mgm,
           if (idUser != null) 'user_id': idUser,

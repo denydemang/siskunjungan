@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static const String baseUrl =
-      'https://fakelocation.warungkode.com/api'; 
+  static const String baseUrl = 'https://apivn.internalbkg.com/api';
 
   static Future<Map<String, dynamic>> login({
     required String email,
@@ -25,27 +24,28 @@ class AuthService {
     }
   }
 
-  static Future<Map<String,dynamic>> logout({
+  static Future<Map<String, dynamic>> logout({
     required String? token,
     required String? email,
   }) async {
     final url = Uri.parse('$baseUrl/users/logout');
     Duration timeout = const Duration(seconds: 10);
     try {
-      final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'token': token, 'email' :email }),
-      ).timeout(timeout);
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'token': token, 'email': email}),
+          )
+          .timeout(timeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-      final message = jsonDecode(response.body)['errors']['general'][0];
-      throw Exception(message ?? 'Log Out Failed');
-    }
+        final message = jsonDecode(response.body)['errors']['general'][0];
+        throw Exception(message ?? 'Log Out Failed');
+      }
     } catch (e) {
-        throw Exception(e);
+      throw Exception(e);
     }
-     
   }
 }

@@ -94,7 +94,9 @@ class _VisitScreenState extends State<VisitScreen> {
     try {
       final jabatan = await SessionService.getJabatan();
       final idUser = await SessionService.getID();
-      String isPMR = (jabatan == 'PMR' || jabatan == 'MGM') && idUser == '3' ? 'true' : 'false';
+      String isPMR = (jabatan == 'PMR' || jabatan == 'MGM') && idUser == '3'
+          ? 'true'
+          : 'false';
       final projects = await VisitService.fetchProjects(isPMR);
       setState(() {
         _projectOptions = projects;
@@ -1101,8 +1103,7 @@ class _VisitScreenState extends State<VisitScreen> {
     required double longitude,
   }) async {
     try {
-      const String apiUrl =
-          'https://fakelocation.warungkode.com/api/check-location';
+      const String apiUrl = 'https://apivn.internalbkg.com/api/check-location';
       final token = await SessionService.getToken();
       final response = await http.post(
         Uri.parse(apiUrl),

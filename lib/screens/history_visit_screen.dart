@@ -45,6 +45,26 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
     super.dispose();
   }
 
+  void _shareToWhatsApp(dynamic kunjungan) async {
+    final message = '''
+Kunjungan:
+📅 Tanggal: ${kunjungan.tglKnj}
+⏰ Jam: ${kunjungan.jamDariCreatedAt}
+👤 Nama: ${kunjungan.namaKnj}
+📍 Lokasi: ${kunjungan.lokasiKnj}
+📌 Koordinat: ${kunjungan.latlongKnj}
+''';
+
+    final url = Uri.encodeFull('https://wa.me/?text=$message');
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gagal membuka WhatsApp")),
+      );
+    }
+  }
+
   void _setupScrollController() {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
@@ -135,7 +155,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
     }
 
     final url = Uri.https(
-      'fakelocation.warungkode.com',
+      'apivn.internalbkg.com',
       '/api/kunjungan/history',
       {
         if (user_pmr != null) 'user_pmr': user_pmr,
@@ -169,12 +189,10 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   }
 
   void _onSearchChanged() {
-    
     if (_searchDebounce?.isActive ?? false) _searchDebounce?.cancel();
-  
+
     _searchDebounce = Timer(const Duration(milliseconds: 500), () {
       if (_searchKeyword != _searchController.text) {
-
         setState(() {
           _searchKeyword = _searchController.text;
         });
@@ -511,7 +529,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   Future<void> _deleteKunjungan(int id) async {
     final token = await SessionService.getToken();
     final url = Uri.https(
-      'fakelocation.warungkode.com',
+      'apivn.internalbkg.com',
       '/api/kunjungan/delete/$id',
     );
 
@@ -695,9 +713,10 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
                                                       backgroundColor:
                                                           _secondaryColor,
                                                       child: const Icon(
-                                                          Icons.calendar_today,
-                                                          size: 16,
-                                                          color: Colors.white),
+                                                        Icons.calendar_today,
+                                                        size: 16,
+                                                        color: Colors.white,
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Column(
@@ -729,84 +748,36 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
                                                     ),
                                                   ],
                                                 ),
-                                                Row(
-                                                  children: [
-                                                    jabatan != 'ADM'
-                                                        ? Container()
-                                                        : Container(
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors
-                                                                  .red[50],
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          20),
-                                                              border: Border.all(
-                                                                  color: Colors
-                                                                          .red[
-                                                                      100]!),
-                                                            ),
-                                                            child: IconButton(
-                                                              onPressed: () =>
-                                                                  _showDeleteConfirmation(
-                                                                      kunjungan
-                                                                          .idKnj,
-                                                                      kunjungan
-                                                                          .namaKnj),
-                                                              icon: Icon(
-                                                                  Icons
-                                                                      .delete_outline,
-                                                                  color: Colors
-                                                                          .red[
-                                                                      400]),
-                                                              tooltip:
-                                                                  'Hapus Kunjungan',
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .all(8),
-                                                              constraints:
-                                                                  const BoxConstraints(),
-                                                            ),
-                                                          ),
-                                                    const SizedBox(width: 8),
-                                                    ElevatedButton.icon(
-                                                      onPressed: () =>
-                                                          showDetailDialog(
-                                                              context,
-                                                              kunjungan),
-                                                      icon: const Icon(
-                                                        Icons
-                                                            .remove_red_eye_outlined,
-                                                        size: 16,
-                                                        color: Colors.white,
-                                                      ),
-                                                      label: const Text(
-                                                          'Detail',
-                                                          style: TextStyle(
-                                                              fontSize: 15,
-                                                              color: Colors
-                                                                  .white)),
-                                                      style: ElevatedButton
-                                                          .styleFrom(
-                                                        backgroundColor:
-                                                            _accentColor,
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 6,
-                                                        ),
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(20),
-                                                        ),
-                                                      ),
+                                                if (jabatan == 'ADM')
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.red[50],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              20),
+                                                      border: Border.all(
+                                                          color:
+                                                              Colors.red[100]!),
                                                     ),
-                                                  ],
-                                                ),
+                                                    child: IconButton(
+                                                      onPressed: () =>
+                                                          _showDeleteConfirmation(
+                                                              kunjungan.idKnj,
+                                                              kunjungan
+                                                                  .namaKnj),
+                                                      icon: Icon(
+                                                          Icons.delete_outline,
+                                                          color:
+                                                              Colors.red[400]),
+                                                      tooltip:
+                                                          'Hapus Kunjungan',
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8),
+                                                      constraints:
+                                                          const BoxConstraints(),
+                                                    ),
+                                                  ),
                                               ],
                                             ),
                                             const SizedBox(height: 12),
@@ -866,6 +837,53 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
                                                 ),
                                               ],
                                             ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                IconButton(
+                                                  onPressed: () =>
+                                                      _shareToWhatsApp(
+                                                          kunjungan),
+                                                  icon: const Icon(
+                                                      Icons.share_outlined,
+                                                      color: Colors.teal),
+                                                  tooltip:
+                                                      'Bagikan via WhatsApp',
+                                                ),
+                                                const SizedBox(width: 4),
+                                                ElevatedButton.icon(
+                                                  onPressed: () =>
+                                                      showDetailDialog(
+                                                          context, kunjungan),
+                                                  icon: const Icon(
+                                                      Icons
+                                                          .remove_red_eye_outlined,
+                                                      size: 16,
+                                                      color: Colors.white),
+                                                  label: const Text('Detail',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          color: Colors.white)),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        _accentColor,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -877,7 +895,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
                           ],
                         ),
                       ),
-              ),
+              )
             ],
           ),
         ),
