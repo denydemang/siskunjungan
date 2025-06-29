@@ -48,7 +48,7 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   void _shareToWhatsApp(dynamic kunjungan) async {
     final message = '''
 Kunjungan:
- 🏗️ Project : ${kunjungan.nama_pro}
+ 🏗️ Project : ${kunjungan.namaPro}
  😎 Nama Pengunjung: ${kunjungan.userKnj}
  📅 Tanggal : ${kunjungan.tglKnj}
  🧑‍💼 Pekerjaan : ${kunjungan.pekerjaanKnj}
