@@ -48,11 +48,13 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
   void _shareToWhatsApp(dynamic kunjungan) async {
     final message = '''
 Kunjungan:
-📅 Tanggal: ${kunjungan.tglKnj}
-⏰ Jam: ${kunjungan.jamDariCreatedAt}
-👤 Nama: ${kunjungan.namaKnj}
-📍 Lokasi: ${kunjungan.lokasiKnj}
-📌 Koordinat: ${kunjungan.latlongKnj}
+ 🏗️ Project : ${kunjungan.nama_pro}
+ 😎 Nama Pengunjung: ${kunjungan.userKnj}
+ 📅 Tanggal : ${kunjungan.tglKnj}
+ 🧑‍💼 Pekerjaan : ${kunjungan.pekerjaanKnj}
+ 🎫 Kategori: ${kunjungan.kategoriKnj}
+ 🪛 Sumber: ${kunjungan.sumberKnj}
+ 📝 Hasil: ${kunjungan.hasilKnj}
 ''';
 
     final url = Uri.encodeFull('https://wa.me/?text=$message');
@@ -428,13 +430,21 @@ Kunjungan:
 
                     // Informasi Detail
                     _buildDetailItem(
-                        Icons.calendar_today, 'Tanggal', kunjungan.tglKnj),
-                    _buildDetailItem(
-                        Icons.access_time, 'Jam', kunjungan.jamDariCreatedAt),
-                    _buildDetailItem(
                         Icons.business, 'Project', kunjungan.namaPro),
                     _buildDetailItem(Icons.verified_user, 'Nama Pengunjung',
                         kunjungan.userKnj),
+                    _buildDetailItem(
+                        Icons.calendar_today, 'Tanggal', kunjungan.tglKnj),
+                    _buildDetailItem(
+                        Icons.work, 'Pekerjaan', kunjungan.pekerjaanKnj),
+                    _buildDetailItem(
+                        Icons.category, 'Kategori', kunjungan.kategoriKnj),
+                    _buildDetailItem(
+                        Icons.source, 'Sumber', kunjungan.sumberKnj),
+                    _buildDetailItem(
+                        Icons.edit_note, 'Hasil', kunjungan.hasilKnj),
+                    _buildDetailItem(
+                        Icons.access_time, 'Jam', kunjungan.jamDariCreatedAt),
                     _buildDetailItem(Icons.verified_user, 'Divisi Pengunjung',
                         kunjungan.divisiKnj),
                     _buildDetailItem(
@@ -486,15 +496,7 @@ Kunjungan:
                       ),
                     ),
                     _buildDetailItem(
-                        Icons.work, 'Pekerjaan', kunjungan.pekerjaanKnj),
-                    _buildDetailItem(
-                        Icons.category, 'Kategori', kunjungan.kategoriKnj),
-                    _buildDetailItem(
                         Icons.person, 'Kontak', kunjungan.kontakKnj),
-                    _buildDetailItem(
-                        Icons.source, 'Sumber', kunjungan.sumberKnj),
-                    _buildDetailItem(
-                        Icons.edit_note, 'Hasil', kunjungan.hasilKnj),
 
                     const SizedBox(height: 16),
 
@@ -783,13 +785,13 @@ Kunjungan:
                                             const SizedBox(height: 12),
                                             Row(
                                               children: [
-                                                const Icon(Icons.abc,
+                                                const Icon(Icons.business_outlined,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    '${kunjungan.namaKnj}',
+                                                    'Nama Proyek : ${kunjungan.namaPro}',
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -802,13 +804,13 @@ Kunjungan:
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
-                                                const Icon(Icons.location_on,
+                                                const Icon(Icons.verified_user_sharp,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    'Lokasi: ${kunjungan.lokasiKnj}',
+                                                    'Nama Marketing: ${kunjungan.userKnj}',
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -821,13 +823,13 @@ Kunjungan:
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
-                                                const Icon(Icons.pin_drop,
+                                                const Icon(Icons.people_alt_sharp,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    'LatLong: ${kunjungan.latlongKnj}',
+                                                    'Nama yg Dikunjungi : ${kunjungan.namaKnj}',
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
