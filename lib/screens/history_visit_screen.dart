@@ -6,6 +6,9 @@ import 'package:sisflutterproject/screens/login_screen.dart';
 import 'package:sisflutterproject/services/session_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async'; // Untuk Timer
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HistoryVisitScreen extends StatefulWidget {
   const HistoryVisitScreen({Key? key}) : super(key: key);
@@ -45,24 +48,117 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
     super.dispose();
   }
 
-  void _shareToWhatsApp(dynamic kunjungan) async {
+//   void _shareToWhatsApp(dynamic kunjungan) async {
+//     final message = '''
+// Kunjungan:
+//  🏗️ Project : ${kunjungan.namaPro}
+//  😎 Nama Pengunjung: ${kunjungan.userKnj}
+//  📅 Tanggal : ${kunjungan.tglKnj}
+//  🧑‍💼 Pekerjaan : ${kunjungan.pekerjaanKnj}
+//  🎫 Kategori: ${kunjungan.kategoriKnj}
+//  🪛 Sumber: ${kunjungan.sumberKnj}
+//  📝 Hasil: ${kunjungan.hasilKnj}
+// ''';
+
+//     final url = Uri.encodeFull('https://wa.me/?text=$message');
+//     if (await canLaunchUrl(Uri.parse(url))) {
+//       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+//     } else {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Gagal membuka WhatsApp")),
+//       );
+//     }
+//   }
+
+//   void _shareToWhatsAppWithImage(dynamic kunjungan) async {
+//     final message = '''
+// Kunjungan:
+// 🏗️ Project: ${kunjungan.namaPro}
+// 😎 Nama Pengunjung: ${kunjungan.userKnj}
+// 📅 Tanggal: ${kunjungan.tglKnj}
+// 🧑‍💼 Pekerjaan: ${kunjungan.pekerjaanKnj}
+// 🎫 Kategori: ${kunjungan.kategoriKnj}
+// 🪛 Sumber: ${kunjungan.sumberKnj}
+// 📝 Hasil: ${kunjungan.hasilKnj}
+// ''';
+
+//     // Contoh URL gambar dari web
+//     final imageUrl =
+//         'http://fakelocation.warungkode.com/public/foto_kunjungan/${kunjungan.fotoKunjungan}';
+
+//     // NOTE: `flutter_share_me` hanya mendukung *local path*, jadi kita harus unduh gambarnya dulu ke lokal
+//     try {
+//       // Unduh gambar dan simpan lokal (perlu http + path_provider package)
+//       final response = await http.get(Uri.parse(imageUrl));
+//       final tempDir = await getTemporaryDirectory();
+//       final file = File('${tempDir.path}/foto_kunjungan.jpg');
+//       await file.writeAsBytes(response.bodyBytes);
+
+//       // Kirim ke WhatsApp
+//       var responseResult = await FlutterShareMe().shareToWhatsApp(
+//         imagePath: file.path,
+//         msg: message,
+//       );
+
+//       if (responseResult != 'success') {
+//         // Handle error
+//         print('Gagal kirim ke WhatsApp');
+//       }
+//     } catch (e) {
+//       print('Error: $e');
+//       // Tampilkan pesan ke user
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Gagal mengirim ke WhatsApp")),
+//       );
+//     }
+//   }
+  Future<void> shareToWhatsAppIntent(
+      BuildContext context, dynamic kunjungan) async {
     final message = '''
 Kunjungan:
- 🏗️ Project : ${kunjungan.namaPro}
- 😎 Nama Pengunjung: ${kunjungan.userKnj}
- 📅 Tanggal : ${kunjungan.tglKnj}
- 🧑‍💼 Pekerjaan : ${kunjungan.pekerjaanKnj}
- 🎫 Kategori: ${kunjungan.kategoriKnj}
- 🪛 Sumber: ${kunjungan.sumberKnj}
- 📝 Hasil: ${kunjungan.hasilKnj}
+🏗️ Project: ${kunjungan.namaPro}
+😎 Nama Pengunjung: ${kunjungan.userKnj}
+📅 Tanggal: ${kunjungan.tglKnj}
+🧑‍💼 Pekerjaan: ${kunjungan.pekerjaanKnj}
+🎫 Kategori: ${kunjungan.kategoriKnj}
+🪛 Sumber: ${kunjungan.sumberKnj}
+📝 Hasil: ${kunjungan.hasilKnj}
 ''';
 
-    final url = Uri.encodeFull('https://wa.me/?text=$message');
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } else {
+    final imageUrl =
+        'http://apivn.internalbkg.com/public/foto_kunjungan/${kunjungan.foto_knj}';
+
+    try {
+      // Download gambar ke lokal
+      final response = await http.get(Uri.parse(imageUrl));
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/kunjungan.jpg');
+      await file.writeAsBytes(response.bodyBytes);
+
+      final filePath = file.path;
+
+      // Pastikan WhatsApp terpasang
+      final whatsappUrl =
+          "whatsapp://send?text=${Uri.encodeComponent(message)}";
+      if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+        // NOTE: Sayangnya url_launcher tidak bisa langsung kirim image ke WA
+        // Tapi kita bisa buka WhatsApp dengan teks, dan arahkan user upload manual
+        await launchUrl(Uri.parse(whatsappUrl));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Gambar tersimpan di: $filePath\nSilakan unggah manual di WhatsApp')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("WhatsApp tidak ditemukan di perangkat")),
+        );
+      }
+    } catch (e) {
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal membuka WhatsApp")),
+        const SnackBar(content: Text("Gagal mengirim ke WhatsApp")),
       );
     }
   }
@@ -785,7 +881,8 @@ Kunjungan:
                                             const SizedBox(height: 12),
                                             Row(
                                               children: [
-                                                const Icon(Icons.business_outlined,
+                                                const Icon(
+                                                    Icons.business_outlined,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
@@ -804,7 +901,8 @@ Kunjungan:
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
-                                                const Icon(Icons.verified_user_sharp,
+                                                const Icon(
+                                                    Icons.verified_user_sharp,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
@@ -823,7 +921,8 @@ Kunjungan:
                                             const SizedBox(height: 6),
                                             Row(
                                               children: [
-                                                const Icon(Icons.people_alt_sharp,
+                                                const Icon(
+                                                    Icons.people_alt_sharp,
                                                     size: 16,
                                                     color: Colors.grey),
                                                 const SizedBox(width: 8),
@@ -846,8 +945,8 @@ Kunjungan:
                                               children: [
                                                 IconButton(
                                                   onPressed: () =>
-                                                      _shareToWhatsApp(
-                                                          kunjungan),
+                                                      shareToWhatsAppIntent(
+                                                          context, kunjungan),
                                                   icon: const Icon(
                                                       Icons.share_outlined,
                                                       color: Colors.teal),
