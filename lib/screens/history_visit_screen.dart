@@ -9,6 +9,7 @@ import 'dart:async'; // Untuk Timer
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HistoryVisitScreen extends StatefulWidget {
   const HistoryVisitScreen({Key? key}) : super(key: key);
@@ -112,9 +113,8 @@ class _HistoryVisitScreenState extends State<HistoryVisitScreen> {
 //       );
 //     }
 //   }
-  Future<void> shareToWhatsAppIntent(
-      BuildContext context, dynamic kunjungan) async {
-    final message = '''
+Future<void> shareToWhatsAppIntent(BuildContext context, dynamic kunjungan) async {
+  final message = '''
 Kunjungan:
 🏗️ Project: ${kunjungan.namaPro}
 😎 Nama Pengunjung: ${kunjungan.userKnj}
@@ -125,43 +125,39 @@ Kunjungan:
 📝 Hasil: ${kunjungan.hasilKnj}
 ''';
 
-    final imageUrl =
-        'http://apivn.internalbkg.com/public/foto_kunjungan/${kunjungan.foto_knj}';
+  final imageUrl = kunjungan.fotoKnj?.toString() ?? '';
+  print(imageUrl);
 
-    try {
-      // Download gambar ke lokal
-      final response = await http.get(Uri.parse(imageUrl));
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/kunjungan.jpg');
-      await file.writeAsBytes(response.bodyBytes);
-
-      final filePath = file.path;
-
-      // Pastikan WhatsApp terpasang
-      final whatsappUrl =
-          "whatsapp://send?text=${Uri.encodeComponent(message)}";
-      if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
-        // NOTE: Sayangnya url_launcher tidak bisa langsung kirim image ke WA
-        // Tapi kita bisa buka WhatsApp dengan teks, dan arahkan user upload manual
-        await launchUrl(Uri.parse(whatsappUrl));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Gambar tersimpan di: $filePath\nSilakan unggah manual di WhatsApp')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("WhatsApp tidak ditemukan di perangkat")),
-        );
-      }
-    } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal mengirim ke WhatsApp")),
-      );
+  try {
+    // Jika tidak mengandung "/foto_kunjungan/", hanya kirim teks saja
+    if (!imageUrl.contains('/foto_kunjungan/')) {
+      await Share.share(message);
+      return;
     }
+
+    // Coba ambil gambar
+    final response = await http.get(Uri.parse(imageUrl));
+    if (response.statusCode != 200) {
+      // Gagal ambil gambar, fallback ke teks
+      await Share.share(message);
+      return;
+    }
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/kunjungan.jpg');
+    await file.writeAsBytes(response.bodyBytes);
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: message,
+    );
+  } catch (e) {
+    print(e);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Gagal membagikan ke WhatsApp")),
+    );
   }
+}
 
   void _setupScrollController() {
     _scrollController.addListener(() {
